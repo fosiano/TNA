@@ -233,20 +233,23 @@ def plotNodoColmo(NodoColmo):
     PointToDXF(dxf_file, Po,"ColmoNodes")
 
 def index(k, n, betaProgressiveLen):
-    indx=betaProgressiveLen[k]+n
+    indx=betaProgressiveLen+n
     return indx
 
 def betaProgressiveLen(NodiOrdinatiPerMeridiani):
     dimension=[0]
     dimProgressive=0
-    for NodiMeridiano in NodiOrdinatiPerMeridiani:     
-        dimProgressive+=len(NodiMeridiano[0])
+    dim=[]
+    for NodiMeridiano in NodiOrdinatiPerMeridiani:
+        d=len(NodiMeridiano[0])
+        dim.append(d)
+        dimProgressive+=d
         dimension.append(dimProgressive)
-    return dimension
+    return dimension, dim
 
 
 def RiordinaNodiMeridiani(NodiOrdinatiPerMeridiani, betaProgressiveLen):
-    #PLOT NODI E BRANCHES NodiOrdinatiPerMeridiani
+    #Riordina NODI E BRANCHES NodiOrdinatiPerMeridiani
     xo=NodoColmo[0]
     yo=NodoColmo[1]
     zo=NodoColmo[2]         
@@ -262,7 +265,7 @@ def RiordinaNodiMeridiani(NodiOrdinatiPerMeridiani, betaProgressiveLen):
         xyzToT=np.hstack((xyzToT,XYZ))
         nodoI=0
         for x in X:   
-            nodoJ=index(k, n, btPrgrssvLn)
+            nodoJ=index(k, n, btPrgrssvLn[k])
             MeridianBranches.append((nodoI,nodoJ))
             nodoI=nodoJ
             n+=1
@@ -272,7 +275,86 @@ def RiordinaNodiMeridiani(NodiOrdinatiPerMeridiani, betaProgressiveLen):
     return xyzToT, MeridianBranches
 
 
-MeridianBranches=[]
+def RiordinaParalleli(NodiOrdinatiPerMeridiani):
+    #Riordina BRANCHES PARALLELI   
+    ParallelBranches=[]     
+    k=0
+    for NodiMeridiano in NodiOrdinatiPerMeridiani: 
+        nextIndex=k+1
+        try:
+            NodiMeridianoSuccessivo=NodiOrdinatiPerMeridiani[nextIndex]
+        except IndexError:
+            NodiMeridianoSuccessivo=NodiOrdinatiPerMeridiani[0]
+            nextIndex=0
+        X=NodiMeridiano[0]
+        Xsuccessivo=NodiMeridianoSuccessivo[0]                     
+        nmax=min(len(X), len(Xsuccessivo))
+        for n in range(1, nmax+1):   
+            nodoI=index(k, n, btPrgrssvLn[k]) 
+            nodoJ=index(nextIndex, n, btPrgrssvLn[nextIndex])
+            ParallelBranches.append((nodoI,nodoJ))
+            n+=1
+        k+=1        
+    return ParallelBranches 
+
+def RiordinaArcoPerimetro(NodiOrdinatiPerMeridiani):
+    #RIORDINA BRANCHES ARCO DI PERIMETRO
+    ArcBranches=[]
+    NodiMeridiano1=NodiOrdinatiPerMeridiani[0]
+    n=len(NodiMeridiano1[0])
+    k=0           
+    nodoI0=index(0, n, btPrgrssvLn[0])
+    nodoI=nodoI0
+    for NodiMeridiano in NodiOrdinatiPerMeridiani[1:]:        
+        n=len(NodiMeridiano[0])
+        nodoJ=index(k+1, n, btPrgrssvLn[k+1])      
+        ArcBranches.append((nodoI,nodoJ))  
+        nodoI=nodoJ        
+        k+=1       
+    ArcBranches.append((nodoJ,nodoI0)) 
+    return ArcBranches
+
+def RiordinaFace(NodiOrdinatiPerMeridiani):
+    #RIORDINA FACE
+    Faces=[]
+    k=0
+    for NodiMeridiano in NodiOrdinatiPerMeridiani:#[:-1]:
+        nodo1=0
+        nodo2=0        
+        nextIndex=k+1
+        try:
+            NodiOrdinatiPerMeridiani[nextIndex]
+        except IndexError:
+            nextIndex=0
+
+        nodiVertici=[nodo1, nodo2]
+        nFaces=min(btParzLn[k], btParzLn[nextIndex])
+        for n in range(0, nFaces):  
+            nodo3=index(nextIndex, n+1, btPrgrssvLn[nextIndex])
+            nodo4=index(k, n+1, btPrgrssvLn[k])
+            nodiVertici.append(nodo3) 
+            nodiVertici.append(nodo4)
+            Faces.append(nodiVertici)
+            nodo1=nodo4
+            nodo2=nodo3
+            nodiVertici=[nodo1, nodo2] 
+        n+=1    
+        if n+1<btParzLn[nextIndex]+1:
+            nodo3=index(nextIndex, n+1, btPrgrssvLn[nextIndex]) 
+        else:
+            nodo3=nodo2                              
+        nodiVertici.append(nodo3)    
+            
+        if n+1<btParzLn[k]+1:
+            nodo4=index(k, n+1, btPrgrssvLn[k])                 
+        else:
+            nodo4=nodo1       
+        nodiVertici.append(nodo4)  
+
+        Faces.append(nodiVertici)             
+        k+=1
+    return Faces
+
 def plotNodiMeridiani(NodiOrdinatiPerMeridiani):
     #PLOT NODI E BRANCHES NodiOrdinatiPerMeridiani
     layerL = "MeridianiBranches"
@@ -281,8 +363,7 @@ def plotNodiMeridiani(NodiOrdinatiPerMeridiani):
     yo=NodoColmo[1]
     zo=NodoColmo[2] 
     Po=Point(xo,yo,zo)    
-    k=1
-    
+    k=1   
     for NodiMeridiano in NodiOrdinatiPerMeridiani: 
         if k==1 or k==2*NsA-1 or k==4*NsA-3 or k==6*NsA-5:
             layerL="DiagonaliBranches"
@@ -295,28 +376,19 @@ def plotNodiMeridiani(NodiOrdinatiPerMeridiani):
         z=NodiMeridiano[2]   
         n=0
         PP=Po
-        nodoI=(k-1,-1)
-        #PointToDXF(PP, layerN)
-        branches=[]
         for X in x:              
             P=Point(x[n],y[n],z[n])
             PointToDXF(dxf_file, P, layerN)
             LineToDXF(dxf_file,  PP, P, layerL)
-            nodoJ=(k-1,n)
-            branches.append([(k-1,n),[nodoI,nodoJ]])
-            nodoI=nodoJ
             n+=1
             PP=P                    
-        #LineToDXF(PP, Po, layerL)
-        MeridianBranches.append(branches)
         k+=1
         layerL = "MeridianiBranches"
         layerN = "NodiInterni"
 
    
 def plotParalleli(NodiOrdinatiPerMeridiani,numeroParalleli):
-    #PLOT BRANCHES PARALLELI   
-    ParallelBranches=[]     
+    #PLOT BRANCHES PARALLELI      
     k=0
     for NodiMeridiano in NodiOrdinatiPerMeridiani: 
         nextIndex=k+1
@@ -331,7 +403,6 @@ def plotParalleli(NodiOrdinatiPerMeridiani,numeroParalleli):
         xsuccessivo=NodiMeridianoSuccessivo[0]
         ysuccessivo=NodiMeridianoSuccessivo[1]   
         zsuccessivo=NodiMeridianoSuccessivo[2] 
-        branches=[]
         for n in range(0, numeroParalleli):
             try:
                 P2=Point(xsuccessivo[n],ysuccessivo[n],zsuccessivo[n])
@@ -341,42 +412,31 @@ def plotParalleli(NodiOrdinatiPerMeridiani,numeroParalleli):
                 P1=Point(x[n],y[n],z[n])
             except IndexError:
                 break      
-            LineToDXF(dxf_file, P1, P2, "ParalleliBranches") 
-            nodoI=(k,n)
-            nodoJ=(nextIndex,n)
-            branches.append([(k,n),[nodoI,nodoJ]])
-        ParallelBranches.append(branches)       
+            LineToDXF(dxf_file, P1, P2, "ParalleliBranches")  
         k+=1
-    return ParallelBranches        
+      
         
 def plotArcoPerimetro(NodiOrdinatiPerMeridiani):
     #PLOT ARCO DI PERIMETRO
-    ArcBranches=[]
     NodiMeridiano1=NodiOrdinatiPerMeridiani[0]
     x1=NodiMeridiano1[0][-1]
     y1=NodiMeridiano1[1][-1] 
     z1=NodiMeridiano1[2][-1] 
-    n=len(NodiMeridiano1[0])-1
+
     P1=Point(x1, y1, z1)
-    #Nm=len(NodiOrdinatiPerMeridiani)
-    #branches=[]
     k=0
-    nodoJ=(0,n)
     for NodiMeridiano in NodiOrdinatiPerMeridiani[1:]:  
-        nodoI=nodoJ
+
         x2=NodiMeridiano[0][-1]
         y2=NodiMeridiano[1][-1] 
         z2=NodiMeridiano[2][-1] 
-        n=len(NodiMeridiano[0])-1
-        nodoJ=(k+1,n)
         P2=Point(x2, y2, z2)
         LineToDXF(dxf_file, P1, P2, "ArcoBranches")          
-        ArcBranches.append([(k,n),[nodoI,nodoJ]])  
+
         P1=P2
         k+=1
     P2=Point(x1, y1, z1)    
     LineToDXF(dxf_file, P1, P2, "ArcoBranches")
-    return ArcBranches
 
 #adeguare per PLOT solo nodi
 def plotNodiEstradosso(NodiOrdinatiPerMeridianiEstradosso):
@@ -407,15 +467,6 @@ def plotNodiEstradosso(NodiOrdinatiPerMeridianiEstradosso):
         k+=1
         layerN = "NodiInterniEstradosso"
 
-# =============================================================================
-# def MediaP(P1, P2,P3,P4):
-#     x=(P1.x+P2.x+P3.x+P4.x)/4
-#     y=(P1.y+P2.y+P3.y+P4.y)/4
-#     z=(P1.z+P2.z+P3.z+P4.z)/4
-#     P=Point(x,y,z)
-#     return P
-# =============================================================================
-
 
 def MediaP(listaP):
     n=len(listaP)
@@ -431,8 +482,6 @@ def MediaP(listaP):
     zm=zm/n
     P=Point(xm,ym,zm)
     return P
-
-Faces=[]
 
 def plotFace(NodiOrdinatiPerMeridiani):
     #PLOT FACE
@@ -454,32 +503,24 @@ def plotFace(NodiOrdinatiPerMeridiani):
         except IndexError:
             NodiMeridianoSuccessivo=NodiOrdinatiPerMeridiani[0]
             nextIndex=0
-        #n1=n0
-        #n2=n0
         x=NodiMeridiano[0]
         y=NodiMeridiano[1]   
         z=NodiMeridiano[2]    
         xsuccessivo=NodiMeridianoSuccessivo[0]
         ysuccessivo=NodiMeridianoSuccessivo[1]   
         zsuccessivo=NodiMeridianoSuccessivo[2]   
-        #n=0
-        nodiVertici=[(k,-1)]
         nFaces=max(x.size, xsuccessivo.size)
-        face=[]
         for n in range(0, nFaces):
             try:
                 P3=Point(xsuccessivo[n],ysuccessivo[n],zsuccessivo[n])
-                nodiVertici.append((nextIndex,n))
             except IndexError:
                 P3=P2
             try:    
                 P4=Point(x[n],y[n],z[n])
-                nodiVertici.append((k,n))
             except IndexError:
                 P4=P1                
             FaceToDXF(dxf_file, P1, P2,P3,P4, layerF)
-
-            face.append([(k,n),nodiVertici])           
+     
             #P=MediaP(P1, P2,P3,P4)
             P=MediaP([P1, P2, P3, P4])
             testo=str(k)+"."+str(n)
@@ -487,9 +528,7 @@ def plotFace(NodiOrdinatiPerMeridiani):
             #n+=1
             P1=P4
             P2=P3 
-            nodiVertici=[(k,n),(nextIndex,n)]
-        Faces.append(face)
-        #FaceToDXF(PP, Po, layerL)
+
         k+=1
 
 
@@ -510,7 +549,7 @@ plotNodoColmo(NodoColmo)
 #DISEGNO DI TUTTI MERIDIALI RELATIVI A 360°
 plotNodiMeridiani(NodiOrdinatiPerMeridianiToT360)  
 ParallelBranches=plotParalleli(NodiOrdinatiPerMeridianiToT360,numeroParalleli)
-ArcBranches=plotArcoPerimetro(NodiOrdinatiPerMeridianiToT360)
+plotArcoPerimetro(NodiOrdinatiPerMeridianiToT360)
 plotFace(NodiOrdinatiPerMeridianiToT360)
 # 
 # =============================================================================
@@ -524,11 +563,15 @@ dxf_file.write("EOF\n")
 
 dxf_file.close()
 
-btPrgrssvLn=betaProgressiveLen(NodiOrdinatiPerMeridianiToT360)
-print(index(0, 1, btPrgrssvLn))
+btPrgrssvLn, btParzLn = betaProgressiveLen(NodiOrdinatiPerMeridianiToT360)
+#print(index(0, 1, btPrgrssvLn))
 
 xyzNodi, Mrdnbranches = RiordinaNodiMeridiani(NodiOrdinatiPerMeridianiToT360, btPrgrssvLn)
 
+Prlllbranches=RiordinaParalleli(NodiOrdinatiPerMeridianiToT360)
+ArcBranches=RiordinaArcoPerimetro(NodiOrdinatiPerMeridianiToT360)
+
+Faces=RiordinaFace(NodiOrdinatiPerMeridianiToT360)
 
 outfile="Velarenum"
 dxf_file = open(outfile+"-OUT.dxf","w")
@@ -549,6 +592,7 @@ for n in range(0, NumeroNodi):
     TextToDXF(dxf_file, P,testo,0.002,layerNodiText)
     
     
+
 NumeroMrdnbranches=len(Mrdnbranches)
 layerMrdnbranches="BRNCHES-Meridian"
 layerMrdnbranchesText="BRNCHES-Index"
@@ -560,12 +604,63 @@ for n in range(0, NumeroMrdnbranches):
     Pj=Point(xyzNodi[0][jNode],xyzNodi[1][jNode],xyzNodi[2][jNode])
     LineToDXF(dxf_file, Pi, Pj, layerMrdnbranches)
     testo=str(n)
-    
-    #calcolare Pmedio
     Pm=MediaP([Pi,Pj])
     TextToDXF(dxf_file, Pm,testo,0.002,layerMrdnbranchesText)    
-    
 
+
+NumeroPrlllbranches=len(Prlllbranches)
+layerPrlllbranches="BRNCHES-Parallel"
+layerPrlllbranchesText="BRNCHES-Parallel-Index"
+for n in range(0, NumeroPrlllbranches): 
+    branch=Prlllbranches[n]
+    iNode=branch[0]    
+    jNode=branch[1]
+    Pi=Point(xyzNodi[0][iNode],xyzNodi[1][iNode],xyzNodi[2][iNode])
+    Pj=Point(xyzNodi[0][jNode],xyzNodi[1][jNode],xyzNodi[2][jNode])
+    LineToDXF(dxf_file, Pi, Pj, layerMrdnbranches)
+    testo=str(n)
+    Pm=MediaP([Pi,Pj])
+    TextToDXF(dxf_file, Pm,testo,0.002,layerPrlllbranchesText)        
+
+
+
+NumeroArcbranches=len(ArcBranches)
+layerArcbranches="BRNCHES-Arc"
+layerArcbranchesText="BRNCHES-Arc-Index"
+for n in range(0, NumeroArcbranches): 
+    branch=ArcBranches[n]
+    iNode=branch[0]    
+    jNode=branch[1]
+    Pi=Point(xyzNodi[0][iNode],xyzNodi[1][iNode],xyzNodi[2][iNode])
+    Pj=Point(xyzNodi[0][jNode],xyzNodi[1][jNode],xyzNodi[2][jNode])
+    LineToDXF(dxf_file, Pi, Pj, layerArcbranches)
+    testo=str(n)
+    Pm=MediaP([Pi,Pj])
+    TextToDXF(dxf_file, Pm,testo,0.002,layerArcbranchesText)        
+
+
+#faces
+NumeroFaces=len(Faces)
+layerFaces="Faces"
+layerFacesText="Faces-Index"
+for n in range(0, NumeroFaces): 
+    face=Faces[n]
+    iNode=face[0]    
+    jNode=face[1]
+    kNode=face[2]    
+    lNode=face[3]    
+    
+    Pi=Point(xyzNodi[0][iNode],xyzNodi[1][iNode],xyzNodi[2][iNode])
+    Pj=Point(xyzNodi[0][jNode],xyzNodi[1][jNode],xyzNodi[2][jNode])
+    Pk=Point(xyzNodi[0][kNode],xyzNodi[1][kNode],xyzNodi[2][kNode])
+    Pl=Point(xyzNodi[0][lNode],xyzNodi[1][lNode],xyzNodi[2][lNode])    
+    
+    FaceToDXF(dxf_file, Pi, Pj, Pk, Pl, layerFaces)
+    testo=str(n)
+    Pm=MediaP([Pi, Pj, Pk, Pl])
+    TextToDXF(dxf_file, Pm,testo,0.002,layerFacesText) 
+    
+    
 dxf_file.write("0\n")
 dxf_file.write("ENDSEC\n")
 dxf_file.write("0\n")
