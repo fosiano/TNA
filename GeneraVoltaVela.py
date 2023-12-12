@@ -26,7 +26,7 @@ def prova(a):
 
 Radicedi2=(2.0**0.50)
 B=3.75
-b=0.5
+b=0.50
 spessoreVOLTA=0.30
 gammaVOLTA=16.00
 spessoreCAPPA=0.0
@@ -39,11 +39,11 @@ qvar=3.00
 
 t=b/2
 r=B/2
-NsA=6
-NsB=8
+
+NsA=8
+NsB=6
 R=r*Radicedi2
 #ao=np.arctan(t*Radicedi2/(2*R+t*Radicedi2))
-
 
 dzFalseArcNode=3.00
 a45=np.pi/4.
@@ -758,7 +758,64 @@ for n in range(0, NumeroFaces):
     Pl=Point(xyzNodi[0][lNode],xyzNodi[1][lNode],ZEstradosso[lNode])    
     FaceToDXF(dxf_file, Pi, Pj, Pk, Pl, "EstradossoFaces")    
     
+
+
+
+def Volumi(indxs):    
+    x=[0]*3
+    y=[0]*3
+    z1=[0]*3
+    z2=[0]*3
+    dzSumV=0.  
+    dzSumR=0.   
+    for i in range(0, 3):    
+        x[i]=xyzNodi[0][indxs[i]]
+        y[i]=xyzNodi[1][indxs[i]]
+        z1[i]=xyzNodi[2][indxs[i]]
+        z2[i]=ZEstradosso[indxs[i]]
+        dzSumV += z2[i]-z1[i]
+        dzSumR += R+spessoreVOLTA+spessoreRINFIANCO-z2[i]
+    S=0.50*abs(x[0]*y[1]+x[1]*y[2]+x[2]*y[0]-x[1]*y[0]-x[2]*y[1]-x[0]*y[2]) 
+    VlmV = S*dzSumV/3
+    VlmR = S*dzSumR/3
+    return VlmV, VlmR 
+
+fzV=np.zeros(NumeroNodiInterni)
+fzR=np.zeros(NumeroNodiInterni)
+i=0
+for face in allFaces:
+    face=list(set(face)) 
+    if len(face) == 3:
+        VlmV, VlmR = Volumi(face)
+        for j in range (0,3):
+            fzV[face[j]]+=-VlmV/3  
+            fzR[face[j]]+=-VlmR/3 
+    else:
+        #print(face)
+        indexes=face[:-1]
+        #print(indexes)
+        VlmV, VlmR = Volumi(indexes)
+        indexes=face[2:]+[face[0]]
+        #print(indexes)
+        VlmV1, VlmR1 = Volumi(indexes)
+        VlmV += VlmV1
+        VlmR += VlmR1
+        for j in range (0,4):
+            fzV[face[j]]+=-VlmV/4 
+            fzR[face[j]]+=-VlmR/4 
+    i+=1
     
+fzV *= gammaVOLTA
+fzR *= gammaRINFIANCO
+PesoTotaleV = 0.0
+PesoTotaleR = 0.0
+i=0
+for f in fzV:
+    PesoTotaleV += f
+    PesoTotaleR += fzR[i]
+    i+=1
     
-       
+print("\nPeso Proprio Volta =", PesoTotaleV*1.00)
+print("Peso rifianco      =", PesoTotaleR*1.00)
+print("\n")
 CloseWrittenDXF(dxf_file)

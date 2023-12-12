@@ -102,7 +102,7 @@ def WriteIntestazioneDXF(dxf_file):
     dxf_file.write("SECTION\n")
     dxf_file.write("2\n")
     dxf_file.write("ENTITIES\n")
-    print(dxf_file.name+" aperto in lettura")
+    print(dxf_file.name+" aperto in Scrittura")
     
 def CloseWrittenDXF(dxf_file): 
     dxf_file.write("0\n")
