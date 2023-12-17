@@ -3,6 +3,14 @@ import numpy as np
 import xalglib as xal
 
 from scipy.optimize import minimize
+from DxfUtility import *
+
+class Point:
+  def __init__(self, x, y, z):
+      self.x = x
+      self.y = y
+      self.z = z
+
 
 #d=densità di forza (ex ths = "th segnato")
 
@@ -245,13 +253,8 @@ c=CS0.tolist()
 #
 state = xal.minbleiccreate(lowerbnd)
 xal.minbleicsetbc(state, lowerbnd, upperbnd)
-xal.minbleicsetlc(state, c, ct,2*Ni)
+xal.minbleicsetlc(state, c, ct, 2*Ni)
 xal.minbleicsetcond(state, epsg, epsf, epsx, maxits)
-
-
-#
-
-
 
 xal.minbleicoptimize_g(state, function1_grad)
 d0, rep = xal.minbleicresults(state)
@@ -261,8 +264,6 @@ print ("f(x) = "+ str(function1(d0))+" - termination type code = "+str((rep.term
 print ("number of iterations = "+str((rep.iterationscount))+" - number of gradient evaluations = "+str((rep.nfev)))
 
 #print(rep.terminationtype) # expected 4
-
-
 
 convergenzad=False
 if rep.terminationtype==4:
@@ -289,6 +290,37 @@ if rep.terminationtype==4:
         d1=d0
 
 
+#******************************************************************************
+#SALVA IN DXF INPUT
+#******************************************************************************
+# =============================================================================
+dxf_fileName=file+"_TNA-IN.dxf"
+dxf_file = open(dxf_fileName,"w")    
+WriteIntestazioneDXF(dxf_file)
+b=0 #itera sui branches
+while (b<Nb):
+        n=np.argmax(Mc[:,[b]]) #nodoI
+        m=np.argmin(Mc[:,[b]]) #nodoJ
+        Pi=Point(x[n], y[n], zBounds[n,0])
+        Pj=Point(x[m], y[m], zBounds[m,0])
+        LineToDXF(dxf_file, Pi, Pj, "INTRADOSSO")        
+        Pi=Point(x[n], y[n], zBounds[n,1])
+        Pj=Point(x[m], y[m], zBounds[m,1])      
+        LineToDXF(dxf_file, Pi, Pj, "ESTRADOSSO")       
+        b+=1 
+n=0 #itera sui nodes
+while (n<Nn):     
+    P=Point(x[n], y[n], zBounds[n,0])
+    testo=str(n+1)
+    PointToDXF(dxf_file, P, NodesLayer[n])
+    TextToDXF(dxf_file, P,testo,0.05,"ID-NODES")    
+    intensity=zBounds[n,1]-2.0*fz[n]
+    Pi=Point(x[n], y[n], zBounds[n,1])
+    Pj=Point(x[n], y[n], intensity)      
+    LineToDXF(dxf_file, Pi, Pj, "fz")
+    n+=1    
+CloseWrittenDXF(dxf_file)    
+     
 #******************************************************************************
 #EVALUATION OF THE NODAL HEIGHTS
 #******************************************************************************
@@ -430,11 +462,7 @@ if convergenzad:
     tbmax=np.max(tmax)
     tbmin=np.min(tmin)
     deltat=(tbmax-tbmin)/9
-    
-    
-    
-    
-        
+           
     #******************************************************************************
     #SALVA IN DXF INPUT - OUTPUT
     #******************************************************************************

@@ -24,9 +24,16 @@ class Point:
 def prova(a):
     return "ok", a
 
+
+tempo_iniziale = time.time()
 Radicedi2=(2.0**0.50)
 B=3.75
+ExternalVoult = True
 b=0.50
+#ExternalVoult = False
+
+if not ExternalVoult:
+    b=0
 spessoreVOLTA=0.30
 gammaVOLTA=16.00
 spessoreCAPPA=0.0
@@ -40,12 +47,13 @@ qvar=3.00
 t=b/2
 r=B/2
 
-NsA=8
-NsB=6
+NsA=4
+NsB=5
 R=r*Radicedi2
 #ao=np.arctan(t*Radicedi2/(2*R+t*Radicedi2))
 
-dzFalseArcNode=3.00
+dzFalseArcNodeMIN=-3.00
+dzFalseArcNodeMAX=0.0
 a45=np.pi/4.
 daA=a45/NsA
 daB=a45/NsB
@@ -181,15 +189,16 @@ CoordinateNodidiArcoPerimetro90=NodiArcoPerimetro(NodiOrdinatiPerMeridiani90)
 CoordinateNodidiArcoPerimetro180=NodiArcoPerimetro(NodiOrdinatiPerMeridiani180)
 CoordinateNodidiArcoPerimetro270=NodiArcoPerimetro(NodiOrdinatiPerMeridiani270)
 
-TrueArcNodesY=EstendiArcoPerimetro(CoordinateNodidiArcoPerimetro0,t,0,  0.)
-TrueArcNodesY180=EstendiArcoPerimetro(CoordinateNodidiArcoPerimetro180,-t,0,  0.)
+if ExternalVoult:
+    TrueArcNodesY=EstendiArcoPerimetro(CoordinateNodidiArcoPerimetro0,t,0,  0.)
+    TrueArcNodesY180=EstendiArcoPerimetro(CoordinateNodidiArcoPerimetro180,-t,0,  0.)
 
 
 FalseArcNodesY=EstendiArcoPerimetro(CoordinateNodidiArcoPerimetro0[1:-1],t+0.60, 0, +0.125)
 FalseArcNodesY180=EstendiArcoPerimetro(CoordinateNodidiArcoPerimetro180[1:-1],-(t+0.60),0, +0.125)
 
-FalseArcNodesX90=EstendiArcoPerimetro(CoordinateNodidiArcoPerimetro90,+0.60, 1, -dzFalseArcNode)
-FalseArcNodesX270=EstendiArcoPerimetro(CoordinateNodidiArcoPerimetro270,-0.60, 1, -dzFalseArcNode)
+FalseArcNodesX90=EstendiArcoPerimetro(CoordinateNodidiArcoPerimetro90,+0.60, 1, dzFalseArcNodeMIN)
+FalseArcNodesX270=EstendiArcoPerimetro(CoordinateNodidiArcoPerimetro270,-0.60, 1, dzFalseArcNodeMIN)
 
 
 ZNodiEstradossoOrdinatiPerMeridiani=[]
@@ -422,11 +431,18 @@ plotFace(NodiOrdinatiPerMeridianiToT360, NodoColmo, dxf_file)
 
 G=NsA-1
 
-plotTrueArchi(TrueArcNodesY, CoordinateNodidiArcoPerimetro0, dxf_file)
-plotTrueArchi(TrueArcNodesY180, CoordinateNodidiArcoPerimetro180, dxf_file)
- 
-plotFalseArchi(FalseArcNodesY, TrueArcNodesY[1:-1], dxf_file)
-plotFalseArchi(FalseArcNodesY180, TrueArcNodesY180[1:-1], dxf_file)
+if ExternalVoult:
+    plotTrueArchi(TrueArcNodesY, CoordinateNodidiArcoPerimetro0, dxf_file)
+    plotTrueArchi(TrueArcNodesY180, CoordinateNodidiArcoPerimetro180, dxf_file)
+
+ArcoVolta0=CoordinateNodidiArcoPerimetro0[1:-1]
+ArcoVolta180=CoordinateNodidiArcoPerimetro180[1:-1]
+if ExternalVoult:
+    ArcoVolta0=TrueArcNodesY[1:-1]
+    ArcoVolta180=TrueArcNodesY180[1:-1]
+    
+plotFalseArchi(FalseArcNodesY, ArcoVolta0, dxf_file)
+plotFalseArchi(FalseArcNodesY180, ArcoVolta180, dxf_file)
 plotFalseArchi(FalseArcNodesX90[1:-1],  CoordinateNodidiArcoPerimetro90[1:-1], dxf_file)
 plotFalseArchi(FalseArcNodesX270[1:-1], CoordinateNodidiArcoPerimetro270[1:-1], dxf_file)
 
@@ -474,45 +490,47 @@ PointToDXF(dxf_file, P1, "ang")
 
 
 #**********************************************
-abc=TrueArcNodesY[0]
-x=abc[0]
-y=abc[1] 
-z=abc[2] 
-P0=Point(x, y, z)
 
-P1=Point(x, y-0.5, z-10.00) 
-LineToDXF(dxf_file, P0, P1, "ang") 
-PointToDXF(dxf_file, P1, "ang")
-
-abc=TrueArcNodesY[-1]
-x=abc[0]
-y=abc[1] 
-z=abc[2] 
-P0=Point(x, y, z)
-
-P1=Point(x, y+0.5, z-10.00) 
-LineToDXF(dxf_file, P0, P1, "ang") 
-PointToDXF(dxf_file, P1, "ang")
-
-abc=TrueArcNodesY180[0]
-x=abc[0]
-y=abc[1] 
-z=abc[2] 
-P0=Point(x, y, z)
-
-P1=Point(x, y+0.5, z-10.00) 
-LineToDXF(dxf_file, P0, P1, "ang") 
-PointToDXF(dxf_file, P1, "ang")
-
-abc=TrueArcNodesY180[-1]
-x=abc[0]
-y=abc[1] 
-z=abc[2] 
-P0=Point(x, y, z)
-
-P1=Point(x, y-0.5, z-10.00) 
-LineToDXF(dxf_file, P0, P1, "ang") 
-PointToDXF(dxf_file, P1, "ang")
+if ExternalVoult:
+    abc=TrueArcNodesY[0]
+    x=abc[0]
+    y=abc[1] 
+    z=abc[2] 
+    P0=Point(x, y, z)
+    
+    P1=Point(x, y-0.5, z-10.00) 
+    LineToDXF(dxf_file, P0, P1, "ang") 
+    PointToDXF(dxf_file, P1, "ang")
+    
+    abc=TrueArcNodesY[-1]
+    x=abc[0]
+    y=abc[1] 
+    z=abc[2] 
+    P0=Point(x, y, z)
+    
+    P1=Point(x, y+0.5, z-10.00) 
+    LineToDXF(dxf_file, P0, P1, "ang") 
+    PointToDXF(dxf_file, P1, "ang")
+    
+    abc=TrueArcNodesY180[0]
+    x=abc[0]
+    y=abc[1] 
+    z=abc[2] 
+    P0=Point(x, y, z)
+    
+    P1=Point(x, y+0.5, z-10.00) 
+    LineToDXF(dxf_file, P0, P1, "ang") 
+    PointToDXF(dxf_file, P1, "ang")
+    
+    abc=TrueArcNodesY180[-1]
+    x=abc[0]
+    y=abc[1] 
+    z=abc[2] 
+    P0=Point(x, y, z)
+    
+    P1=Point(x, y-0.5, z-10.00) 
+    LineToDXF(dxf_file, P0, P1, "ang") 
+    PointToDXF(dxf_file, P1, "ang")
 
 #*************************************
 
@@ -529,52 +547,62 @@ ArcBranches=RiordinaArcoPerimetro(NodiOrdinatiPerMeridianiToT360)
 
 lastIndex=len(xyzNodi[0])-1
 lastTrueVoltaIndex=lastIndex
-xyzNodi=np.hstack((xyzNodi,TrueArcNodesY.T, TrueArcNodesY180.T))
+
+if ExternalVoult:   
+    xyzNodi=np.hstack((xyzNodi,TrueArcNodesY.T, TrueArcNodesY180.T))
+    TrueArcNodesYZEstradosso=np.copy(TrueArcNodesY)
+    
 xyzNodi=np.hstack((xyzNodi,FalseArcNodesY.T, FalseArcNodesY180.T))
 xyzNodi=np.hstack((xyzNodi,FalseArcNodesX90[1:-1].T, FalseArcNodesX270[1:-1].T))
 
-TrueArcNodesYZEstradosso=np.copy(TrueArcNodesY)
-
 # ZTrueArcNodesYEstradosso=np.sqrt((r+spessoreVOLTA)**2-(np.square(TrueArcNodesY.T[1])))
 # ZTrueArcNodesYEstradosso180=np.sqrt((r+spessoreVOLTA)**2-(np.square(TrueArcNodesY180.T[1])))
-
-ZTrueArcNodesYEstradosso=GeneraNodiEstradosso(R+spessoreVOLTA,CoordinateNodidiArcoPerimetro0[:,0],CoordinateNodidiArcoPerimetro0[:,1]) 
-ZEstradosso=np.hstack((ZEstradosso, ZTrueArcNodesYEstradosso, ZTrueArcNodesYEstradosso))
+ZTrueArcNodesYEstradosso=GeneraNodiEstradosso(R+spessoreVOLTA,CoordinateNodidiArcoPerimetro0[:,0],CoordinateNodidiArcoPerimetro0[:,1])
+if ExternalVoult:    
+    ZEstradosso=np.hstack((ZEstradosso, ZTrueArcNodesYEstradosso, ZTrueArcNodesYEstradosso))
 
 ZFalseArcNodesYEstradosso=ZTrueArcNodesYEstradosso[1:-1]
 ZEstradosso=np.hstack((ZEstradosso, ZFalseArcNodesYEstradosso, ZFalseArcNodesYEstradosso))
 
 #ZFalseArcNodesXEstradosso=(r+spessoreVOLTA)*np.ones(len(FalseArcNodesX90.T[1])-2)
-ZFalseArcNodesXEstradosso=FalseArcNodesX90[1:-1].T[2]+dzFalseArcNode
+ZFalseArcNodesXEstradosso=ZTrueArcNodesYEstradosso[1:-1]+dzFalseArcNodeMAX
 ZEstradosso=np.hstack((ZEstradosso, ZFalseArcNodesXEstradosso, ZFalseArcNodesXEstradosso))
 
 Faces=RiordinaFace(NodiOrdinatiPerMeridianiToT360)
-ArchiFace = AddArchiFace(TrueArcNodesY,0,lastIndex)
+
+if ExternalVoult:
+    ArchiFace = AddArchiFace(TrueArcNodesY,0,lastIndex)
 
 allBranches=np.vstack((Mrdnbranches,Prlllbranches, ArcBranches))
-
-
-TrueArcBranches, lastIndex = RiordinoTrueArchi(TrueArcNodesY,0,lastIndex)
-allBranches=np.vstack((allBranches,TrueArcBranches))
-
-k0=4*(NsA-1)
-ArchiFace180 = AddArchiFace(TrueArcNodesY,k0,lastIndex)
-allFaces=np.vstack((Faces, ArchiFace, ArchiFace180))
-
-TrueArcBranches, lastIndex = RiordinoTrueArchi(TrueArcNodesY180,k0,lastIndex)
-allBranches=np.vstack((allBranches,TrueArcBranches))
+allFaces=Faces
+if ExternalVoult:
+    TrueArcBranches, lastIndex = RiordinoTrueArchi(TrueArcNodesY,0,lastIndex)
+    allBranches=np.vstack((allBranches,TrueArcBranches))
+    k0=4*(NsA-1)
+    ArchiFace180 = AddArchiFace(TrueArcNodesY,k0,lastIndex)
+    allFaces=np.vstack((allFaces, ArchiFace, ArchiFace180))
+    TrueArcBranches, lastIndex = RiordinoTrueArchi(TrueArcNodesY180,k0,lastIndex)
+    allBranches=np.vstack((allBranches,TrueArcBranches))
 
 NumeroBranchesInterni = len(allBranches)
 
-
 lastTrueNodesIndex=lastIndex
-n1=lastIndex-(2*NsA-1)-(2*NsA-1)+1
-FalseArcBranches, lastIndex = RiordinoFalseArchiY(FalseArcNodesY, lastIndex, n1 )
-allBranches=np.vstack((allBranches, FalseArcBranches))
-n1=lastIndex-(2*NsA-3)-(2*NsA-1)+1
-FalseArcBranches, lastIndex = RiordinoFalseArchiY(FalseArcNodesY180, lastIndex, n1)
-allBranches=np.vstack((allBranches, FalseArcBranches))
-
+n1=0
+if ExternalVoult:
+    n1=lastIndex-(2*NsA-1)-(2*NsA-1)+1
+    FalseArcBranches, lastIndex = RiordinoFalseArchiY(FalseArcNodesY, lastIndex, n1 )
+    allBranches=np.vstack((allBranches, FalseArcBranches))
+    n1=lastIndex-(2*NsA-3)-(2*NsA-1)+1
+    FalseArcBranches, lastIndex = RiordinoFalseArchiY(FalseArcNodesY180, lastIndex, n1)
+    allBranches=np.vstack((allBranches, FalseArcBranches))
+else:
+  k0=+1
+  FalseArcBranches, lastIndex = RiordinoFalseArchiX(FalseArcNodesY,k0,lastIndex)  
+  allBranches=np.vstack((allBranches, FalseArcBranches))  
+  k0=4*NsA-3
+  FalseArcBranches, lastIndex = RiordinoFalseArchiX(FalseArcNodesY180,k0,lastIndex)
+  allBranches=np.vstack((allBranches, FalseArcBranches)) 
+    
 k0=2*NsA-1
 FalseArcBranches, lastIndex = RiordinoFalseArchiX(FalseArcNodesX90[1:-1],k0,lastIndex)
 allBranches=np.vstack((allBranches, FalseArcBranches))
@@ -585,8 +613,8 @@ allBranches=np.vstack((allBranches, FalseArcBranches))
 
 
 P=CoordinateNodidiArcoPerimetro90[0]
-NodesAdd=np.array([P[0]+0.5, P[1]+0.5, z-dzFalseArcNode]) 
-ZEstradossoNodesAdd=[z+dzFalseArcNode]
+NodesAdd=np.array([P[0]+0.5, P[1]+0.5, P[2]+dzFalseArcNodeMIN]) 
+ZEstradossoNodesAdd=[P[2]+dzFalseArcNodeMAX]
 k=2*(NsA-1)
 nodoI = index(k, btParzLn[k], btPrgrssvLn[k])
 nodoJ = lastIndex+1
@@ -595,9 +623,9 @@ NewBranches=[branch]
 
 
 P=CoordinateNodidiArcoPerimetro90[-1]
-NodesAddi=np.array([P[0]-0.5, P[1]+0.5, z-dzFalseArcNode]) 
+NodesAddi=np.array([P[0]-0.5, P[1]+0.5, P[2]+dzFalseArcNodeMIN]) 
 NodesAdd=np.vstack((NodesAdd,NodesAddi))
-ZEstradossoNodesAdd += [z+dzFalseArcNode]
+ZEstradossoNodesAdd += [P[2]+dzFalseArcNodeMAX]
 k=4*(NsA-1)
 nodoI = index(k, btParzLn[k], btPrgrssvLn[k])
 nodoJ += 1
@@ -606,9 +634,9 @@ NewBranches+=[branch]
 
 
 P=CoordinateNodidiArcoPerimetro270[0]
-NodesAddi=np.array([P[0]-0.5, P[1]-0.5, z-dzFalseArcNode]) 
+NodesAddi=np.array([P[0]-0.5, P[1]-0.5, P[2]+dzFalseArcNodeMIN]) 
 NodesAdd=np.vstack((NodesAdd,NodesAddi))
-ZEstradossoNodesAdd += [z+dzFalseArcNode]
+ZEstradossoNodesAdd += [P[2]+dzFalseArcNodeMAX]
 k=6*(NsA-1)
 nodoI = index(k, btParzLn[k], btPrgrssvLn[k])
 nodoJ += 1
@@ -616,51 +644,52 @@ branch=[nodoI, nodoJ]
 NewBranches+=[branch]
 
 P=CoordinateNodidiArcoPerimetro270[-1]
-NodesAddi=np.array([P[0]+0.5, P[1]-0.5, z-dzFalseArcNode]) 
+NodesAddi=np.array([P[0]+0.5, P[1]-0.5, P[2]+dzFalseArcNodeMIN]) 
 NodesAdd=np.vstack((NodesAdd,NodesAddi))
-ZEstradossoNodesAdd += [z+dzFalseArcNode]
+ZEstradossoNodesAdd += [P[2]+dzFalseArcNodeMAX]
 k=0
 nodoI = index(k, btParzLn[k], btPrgrssvLn[k])
 nodoJ += 1
 branch=[nodoI, nodoJ]
 NewBranches+=[branch]
 
-P=TrueArcNodesY[0]
-NodesAddi=np.array([P[0], P[1]-0.5, z-dzFalseArcNode])
-NodesAdd=np.vstack((NodesAdd,NodesAddi))
-ZEstradossoNodesAdd += [z+dzFalseArcNode]
-nodoI =lastTrueVoltaIndex+1
-nodoJ += 1
-branch=[nodoI, nodoJ]
-NewBranches+=[branch]
 
-P=TrueArcNodesY[-1]
-NodesAddi=np.array([P[0], P[1]+0.5, z-dzFalseArcNode]) 
-NodesAdd=np.vstack((NodesAdd,NodesAddi))
-ZEstradossoNodesAdd += [z+dzFalseArcNode]
-nodoI =lastTrueVoltaIndex+2*NsA-1
-nodoJ += 1
-branch=[nodoI, nodoJ]
-NewBranches+=[branch]
-
-P=TrueArcNodesY180[0]
-NodesAddi=np.array([P[0],P[1]+0.5, z-dzFalseArcNode]) 
-NodesAdd=np.vstack((NodesAdd,NodesAddi))
-ZEstradossoNodesAdd += [z+dzFalseArcNode]
-nodoI += 1
-nodoJ += 1
-branch=[nodoI, nodoJ]
-NewBranches+=[branch]
-
-
-P=TrueArcNodesY180[-1]
-NodesAddi=np.array([P[0], P[1]-0.5, z-dzFalseArcNode]) 
-NodesAdd=np.vstack((NodesAdd,NodesAddi))
-ZEstradossoNodesAdd += [z+dzFalseArcNode]
-nodoI += 2*NsA-2
-nodoJ += 1
-branch=[nodoI, nodoJ]
-NewBranches+=[branch]
+if ExternalVoult:
+    P=TrueArcNodesY[0]
+    NodesAddi=np.array([P[0], P[1]-0.5, P[2]+dzFalseArcNodeMAX])
+    NodesAdd=np.vstack((NodesAdd,NodesAddi))
+    ZEstradossoNodesAdd += [P[2]+dzFalseArcNodeMIN]
+    nodoI =lastTrueVoltaIndex+1
+    nodoJ += 1
+    branch=[nodoI, nodoJ]
+    NewBranches+=[branch]
+    
+    P=TrueArcNodesY[-1]
+    NodesAddi=np.array([P[0], P[1]+0.5, P[2]+dzFalseArcNodeMAX]) 
+    NodesAdd=np.vstack((NodesAdd,NodesAddi))
+    ZEstradossoNodesAdd += [P[2]+dzFalseArcNodeMIN]
+    nodoI =lastTrueVoltaIndex+2*NsA-1
+    nodoJ += 1
+    branch=[nodoI, nodoJ]
+    NewBranches+=[branch]
+    
+    P=TrueArcNodesY180[0]
+    NodesAddi=np.array([P[0],P[1]+0.5, P[2]+dzFalseArcNodeMAX]) 
+    NodesAdd=np.vstack((NodesAdd,NodesAddi))
+    ZEstradossoNodesAdd += [P[2]+dzFalseArcNodeMIN]
+    nodoI += 1
+    nodoJ += 1
+    branch=[nodoI, nodoJ]
+    NewBranches+=[branch]
+      
+    P=TrueArcNodesY180[-1]
+    NodesAddi=np.array([P[0], P[1]-0.5, P[2]+dzFalseArcNodeMAX]) 
+    NodesAdd=np.vstack((NodesAdd,NodesAddi))
+    ZEstradossoNodesAdd += [P[2]+dzFalseArcNodeMIN]
+    nodoI += 2*NsA-2
+    nodoJ += 1
+    branch=[nodoI, nodoJ]
+    NewBranches+=[branch]
 
 #******************************************************************************
 xyzNodi=np.hstack((xyzNodi,NodesAdd.T))
@@ -759,23 +788,26 @@ for n in range(0, NumeroFaces):
     FaceToDXF(dxf_file, Pi, Pj, Pk, Pl, "EstradossoFaces")    
     
 
-
+#spessoreCAPPA
 
 def Volumi(indxs):    
     x=[0]*3
     y=[0]*3
     z1=[0]*3
     z2=[0]*3
-    dzSumV=0.  
-    dzSumR=0.   
+    dzSumV=0.        
+    dzSumC=0
+    dzSumR=0.
     for i in range(0, 3):    
         x[i]=xyzNodi[0][indxs[i]]
         y[i]=xyzNodi[1][indxs[i]]
         z1[i]=xyzNodi[2][indxs[i]]
         z2[i]=ZEstradosso[indxs[i]]
+        #z3[i]=ZEstradossoCAPPA[indxs[i]]
         dzSumV += z2[i]-z1[i]
+        #dzSumC += z3[i]-z2[i]
         dzSumR += R+spessoreVOLTA+spessoreRINFIANCO-z2[i]
-    S=0.50*abs(x[0]*y[1]+x[1]*y[2]+x[2]*y[0]-x[1]*y[0]-x[2]*y[1]-x[0]*y[2]) 
+    S=0.50*abs(y[0]*(x[1]-x[2]) +y[1]*(x[2]-x[0]) +y[2]*(x[0]-x[1]))
     VlmV = S*dzSumV/3
     VlmR = S*dzSumR/3
     return VlmV, VlmR 
@@ -784,27 +816,21 @@ fzV=np.zeros(NumeroNodiInterni)
 fzR=np.zeros(NumeroNodiInterni)
 i=0
 for face in allFaces:
-    face=list(set(face)) 
-    if len(face) == 3:
-        VlmV, VlmR = Volumi(face)
-        for j in range (0,3):
-            fzV[face[j]]+=-VlmV/3  
-            fzR[face[j]]+=-VlmR/3 
-    else:
-        #print(face)
-        indexes=face[:-1]
-        #print(indexes)
-        VlmV, VlmR = Volumi(indexes)
-        indexes=face[2:]+[face[0]]
-        #print(indexes)
-        VlmV1, VlmR1 = Volumi(indexes)
-        VlmV += VlmV1
-        VlmR += VlmR1
-        for j in range (0,4):
-            fzV[face[j]]+=-VlmV/4 
-            fzR[face[j]]+=-VlmR/4 
-    i+=1
-    
+    indexes=face[:-1]
+    VlmV, VlmR = Volumi(indexes)
+    indexes = list(face.copy())
+    indexes.pop(1)
+    VlmV1, VlmR1 = Volumi(indexes)
+    VlmV += VlmV1
+    VlmR += VlmR1
+    for j in range (0,4):
+        fzV[face[j]]+=-VlmV/4 
+        fzR[face[j]]+=-VlmR/4         
+i+=1    
+
+#face=list(sorted(set(face), key=list(face).index)) 
+
+
 fzV *= gammaVOLTA
 fzR *= gammaRINFIANCO
 PesoTotaleV = 0.0
@@ -819,3 +845,72 @@ print("\nPeso Proprio Volta =", PesoTotaleV*1.00)
 print("Peso rifianco      =", PesoTotaleR*1.00)
 print("\n")
 CloseWrittenDXF(dxf_file)
+
+fx=np.zeros(NumeroNodiTotali)
+fy=np.zeros(NumeroNodiTotali)
+fz=fzV+fzR
+
+fz=np.hstack((fz, np.zeros(NumeroNodiEsterni)))
+
+tipoNodo=np.ones(NumeroNodiInterni, dtype=int)
+tipoNodo=np.hstack((tipoNodo, np.zeros(NumeroNodiEsterni, dtype=int)))
+
+NodesLayer = ["EXTERNAL NODES", "INTERNAL NODES"]
+
+#
+
+
+# *****************************************************************************
+# SCRITTURA FILE PER APPLICAZIONE RosatiTNA.PY
+#******************************************************************************
+
+dat_file = open((fileName+".dat"),"w")
+dat_file.write(str(NumeroNodiTotali)+"\n")
+
+n=0
+
+while (n<NumeroNodiTotali):
+    x=format(xyzNodi[0][n], '+.6f') 
+    y=format(xyzNodi[1][n], '+.6f')
+    zmin=format(xyzNodi[2][n], '+.6f')
+    zmax=format(ZEstradosso[n], '+.6f')  
+    fxn=format(fx[n], '+.3f')
+    fyn=format(fy[n], '+.3f')
+    fzn=format(fz[n], '+.3f')
+    row = str(n+1)+"  "+ str(x)+"  "+str(y)+"  "+str(zmin)+"  "+str(zmax)
+    row += "  "+str(fxn)+"  "+str(fyn)+"  "+str(fzn)
+    row += "  "+str(tipoNodo[n])+"  "+str(NodesLayer[tipoNodo[n]])
+    dat_file.write(row +"\n")
+    n+=1
+
+dat_file.write(str(NumeroBranchesTotali)+"\n")
+
+dminMeridiani=3.0#0.5
+dminDiagonali=1.0
+dminParalleli=0.75
+
+branchesdmin=np.ones(NumeroBranchesTotali)*dminMeridiani
+
+for n in range(0, NumeroallBranches): 
+    branch=allBranches[n]
+    iNode=branch[0]    
+    jNode=branch[1]
+    row = str(iNode+1)+" "+str(jNode+1)+" "+format(branchesdmin[n], '+.3f')
+    #str(branches[b,0]+1)+" "+str(branches[b,1]+1)+" "+str(branchesdmin[b,0])+"\n
+    dat_file.write(row+"\n")
+
+# while (b<Nb):
+#     dat_file.write(str(branches[b,0]+1)+" "+str(branches[b,1]+1)+" "+str(branchesdmin[b,0])+"\n")
+#     b+=1
+# =============================================================================
+
+dat_file.close()
+print ("...Elaborazione conclusa")
+print ("Dati salvati nel file " + fileName + ".DAT")
+print ("Esportati " + str(NumeroNodiTotali) + " Nodi e " + str(NumeroBranchesTotali) + " branches")
+tempo_finale = time.time()
+print ("Impiegati ", str(tempo_finale - tempo_iniziale), " secondi per l'esportazione.")
+
+
+
+
