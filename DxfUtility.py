@@ -103,6 +103,32 @@ def WriteIntestazioneDXF(dxf_file):
     dxf_file.write("2\n")
     dxf_file.write("ENTITIES\n")
     print(dxf_file.name+" aperto in Scrittura")
+  
+  
+# =============================================================================
+# def WriteNewLayerDXF(dxf_file, layerName, color):
+#     dxf_file.write("0\n")
+#     dxf_file.write("SECTION\n")
+#     dxf_file.write("2\n")
+#     dxf_file.write("TABLES\n")
+#     dxf_file.write("0\n")
+#     dxf_file.write("TABLE\n")
+#     dxf_file.write("2\n")    
+#     dxf_file.write("LAYER\n")
+#     dxf_file.write("2\n")
+#     dxf_file.write(layerName+"\n")
+#     dxf_file.write("62\n")
+#     dxf_file.write(color+"\n")
+#     dxf_file.write("ENDTAB\n")
+#     dxf_file.write("0\n")
+#     dxf_file.write("ENDSEC\n")
+#     dxf_file.write("0\n")
+#     dxf_file.write("SECTION\n")
+#     dxf_file.write("2\n")
+#     dxf_file.write("ENTITIES\n")
+#     print(dxf_file.name+" aperto in Scrittura")    
+# =============================================================================
+    
     
 def CloseWrittenDXF(dxf_file): 
     dxf_file.write("0\n")

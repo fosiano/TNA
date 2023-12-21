@@ -1,7 +1,8 @@
 import time
 import numpy as np
 import xalglib as xal
-
+#from scipy.optimize import show_options
+from scipy.optimize import LinearConstraint
 from scipy.optimize import minimize
 from DxfUtility import *
 
@@ -11,7 +12,7 @@ class Point:
       self.y = y
       self.z = z
 
-
+#show_options(solver= 'minimize', method='SLSQP', disp=True)
 #d=densità di forza (ex ths = "th segnato")
 
 
@@ -38,8 +39,8 @@ epsx = 0.
 maxits = 0
 
 
-tolopt=1.0e-10 #tolleranza nelle procedure di ottimizzazione delle z (r) 
-itermax=250
+tolopt=1.0e-7 #tolleranza nelle procedure di ottimizzazione delle z (r) 
+itermax=200
 #******************************************************************************
 #LETTURA FILE DATI INPUT - MEMORIZZAZIONE DATI PER ELABORAZIONE
 #******************************************************************************
@@ -96,7 +97,10 @@ Ne=Nn-Nr #numero dei nodi esterni liberi (connected to edge branches)
 #branchesINnode = [[] for i in range(Nn)]
 
 line=network.readline()
-Nb=int(line) #numero dei branches
+dati = line.split()
+Nb=int(dati[0]) #numero dei branches
+Nbe=int(dati[1]) #numero dei branches esterno
+Nbi=Nb-Nbe #numero dei branches interni
 #branches=np.zeros(shape=(Nb,2),dtype=np.uint16)
 #branchesflag=np.zeros(Nb, dtype=np.uint8)
 Mc=np.zeros(shape=(Nn,Nb))
@@ -122,6 +126,12 @@ dx=np.dot(Mc.T,x)
 dy=np.dot(Mc.T,y)
 lh=np.sqrt(dx**2+dy**2)
 
+line=network.readline()
+ArrayArcIndexes = np.fromstring( line[1:-2], dtype=np.int32, sep=', ' )
+line=network.readline()
+ArrayFalseArcIndexes = np.fromstring( line[1:-2], dtype=np.int32, sep=', ' )
+line=network.readline()
+PesoTotale=float(line)
 #qqq=np.asarray(branchesINnode)
 #print len(qqq[2])
 #print len(branchesINnode[0])
@@ -157,9 +167,18 @@ def equilibrioZ(zr):
     #return np.squeeze(np.asarray(D*np.matrix(z).T))
     #return np.array(D*np.matrix(z).T).ravel()
     return np.ravel(D*np.matrix(zr).T)#COMMENTARE RAVEL????????????????????????????????????
-  
+
+def equalZ(zr):
+   #a=np.zeros(len(zr))
+   a=zr.take(ArrayArcIndexes)
+   b=zr.take(ArrayFalseArcIndexes)
+   c=a-b
+   return c
+        
+
 
 jacobrp=np.zeros(Nn+1)
+
 jacobrp[Nn]=1.00
 def DERobjectiverp(zr):
     return jacobrp
@@ -171,7 +190,9 @@ def DERobjectivern(zr):
 
 def callbackFZrp(t):
   global Nfeval
-  print ("passo:"+str(Nfeval)+" / "+str(objectiverp(t)))
+  isZero=equilibrioZ(t)
+  SommaQuadrati=np.sqrt(np.sum(isZero*isZero))
+  print ("passo:"+str(Nfeval)+" / r = "+str(objectiverp(t))+" / sQFeq = "+str(SommaQuadrati))
   #print(d)
   Nfeval += 1
 
@@ -234,7 +255,7 @@ fh=np.append(fx, fy, axis=0)
 fh=np.matrix(fh).T
 
 zero=np.zeros(2*Ni)
-ct=zero.tolist() # 0 sta ad indicare che il vinccolo consite in "equality" 
+ct=zero.tolist() # 0 sta ad indicare che il vincolo consite in "equality" 
 
 
 lowerbnd=dmin.tolist()
@@ -297,6 +318,8 @@ if rep.terminationtype==4:
 dxf_fileName=file+"_TNA-IN.dxf"
 dxf_file = open(dxf_fileName,"w")    
 WriteIntestazioneDXF(dxf_file)
+#WriteNewLayerDXF(dxf_file, "prova", "6")
+
 b=0 #itera sui branches
 while (b<Nb):
         n=np.argmax(Mc[:,[b]]) #nodoI
@@ -342,6 +365,12 @@ if convergenzad:
         
     # equazione di equilibrio
     equZ = {'type': 'eq', 'fun': equilibrioZ}
+    asseSimm = {'type': 'eq', 'fun': equalZ}
+# =============================================================================
+#     Bounds=np.vstack((zBounds, [0.000000, np.inf]))
+#     zr_zero=np.zeros(len(bnds))
+# =============================================================================
+    
     
     fz=np.matrix(fz).T
     if not(VerticalLoads): 
@@ -361,10 +390,33 @@ if convergenzad:
         D=np.append(Do, fz, axis=1)
         D=np.delete(D, exttpl, axis=0)
         
+        
+        
         #Shallowest configuration network (maximum thrust) ///////, jac=DERobjectiverp
         Nfeval=1
-        solutionZrmin = minimize(objectiverp,zmedr,method='SLSQP',bounds=bnds, constraints=equZ, jac=DERobjectiverp, callback=callbackFZrp, options={'disp': True, 'maxiter': itermax,'ftol': tolopt})
+# =============================================================================
+#         
+#         
+#         linear_constraint = LinearConstraint(D, zr_zero, zr_zero)
+#         solutionZrmin = minimize(objectiverp, zmedr, method='trust-constr',bounds=Bounds, constraints=[linear_constraint], 
+#                                  jac=DERobjectiverp,  
+#                                  options={'disp': True, 'maxiter': itermax})
+#         
+#         
+# =============================================================================
+        solutionZrmin = minimize(objectiverp, zmedr, method='SLSQP',bounds=bnds, constraints=[equZ], 
+                                 jac=DERobjectiverp, callback=callbackFZrp, 
+                                 options={'disp': True, 'maxiter': itermax, 'ftol': tolopt})
+ 
         zrmin = solutionZrmin.x #Shallowest configuration network (maximum thrust)
+        
+        isZero=equilibrioZ(zrmin)
+        SommaQuadrati=np.sqrt(np.sum(isZero*isZero))
+        print("\nVERIFICA DELL'EQUILIBRIO LUNGO LA VERTICALE\n")
+        
+        #print("il vettore completo delle somma delle Fz nodali è pari a: \n\n", isZero, "\n")
+        print("La Radice Quadrata della Somma dei Quadratri è pari a: ", SommaQuadrati, "\n")
+        
         rmin=zrmin[Nn]
         OKrmin=solutionZrmin.success
         print("OKrmin = ",OKrmin)
@@ -372,7 +424,8 @@ if convergenzad:
         if VerticalLoads: break 
         if rmin>r1:
             d=d0+rmin/r1*(d1-d0) 
-            err=(rmin-rprecedente)/rprecedente    
+            err=abs((rmin-rprecedente)/rprecedente)
+            
             rprecedente=rmin
         else:
             attenz="r1 TR0PPO GRANDE"
@@ -381,8 +434,11 @@ if convergenzad:
     
     zmin=np.delete(zrmin, Nn, axis=0)
     lzmin=np.dot(Mc.T,zmin)
-    tmax=(1/rmin)*d*np.sqrt(lh**2+lzmin**2)/lh
-    
+    thmax=(1/rmin)*d
+    tmax=thmax*np.sqrt(lh**2+lzmin**2)/lh
+    tzmax=thmax*lzmin/lh
+    Rz=np.sum(tzmax[Nbi:])
+    print("Rz = ", Rz, "/",PesoTotale, " = ",Rz/PesoTotale)
     
     rprecedente=r1
     err=10
@@ -401,17 +457,33 @@ if convergenzad:
         Nfeval=1
         solutionZrmax = minimize(objectivern,zmedr,method='SLSQP',bounds=bnds, constraints=equZ, jac=DERobjectivern, callback=callbackFZrn, options={'disp': True, 'maxiter': itermax,  'ftol': tolopt})
         zrmax = solutionZrmax.x #deepest configuration network (minimum thrust)
+        isZero=equilibrioZ(zrmax)
+        SommaQuadrati=np.sqrt(np.sum(isZero*isZero))
+        print("\nVERIFICA DELL'EQUILIBRIO LUNGO LA VERTICALE\n")
+        
+        #print("il vettore completo delle somma delle Fz nodali è pari a: \n\n", isZero, "\n")
+        print("La Radice Quadrata della Somma dei Quadratri è pari a: ", SommaQuadrati, "\n")
+        
         rmax=zrmax[Nn]
         OKrmax=solutionZrmax.success
         if not(OKrmax): break
         if VerticalLoads: break
-        err=(rmax-rprecedente)/rprecedente
+        err=abs((rmax-rprecedente)/rprecedente)
         d=d0+rmax/r1*(d1-d0)
         rprecedente=rmax
      
     zmax=np.delete(zrmax, Nn, axis=0)
     lzmax=np.dot(Mc.T,zmax)
-    tmin=(1/rmax)*d*np.sqrt(lh**2+lzmax**2)/lh
+    #tmin=(1/rmax)*d*np.sqrt(lh**2+lzmax**2)/lh
+    
+    thmin=(1/rmax)*d
+    tmin=thmin*np.sqrt(lh**2+lzmax**2)/lh
+    tzmin=thmin*lzmax/lh
+    Rz=np.sum(tzmin[Nbi:])
+    print("Rz = ", Rz, "/",PesoTotale, " = ",Rz/PesoTotale)
+    
+    
+    
     
     rprecedente=r1
     err=10
@@ -430,17 +502,34 @@ if convergenzad:
         Nfeval=1
         solutionZrmed = minimize(objectivermed,zmedr,method='SLSQP',bounds=bnds, constraints=equZ, callback=callbackFZmed, options={'disp': True, 'maxiter': itermax,'ftol': tolopt})
         zrmed = solutionZrmed.x #
+        
+        isZero=equilibrioZ(zrmed)
+        SommaQuadrati=np.sqrt(np.sum(isZero*isZero))
+        print("\nVERIFICA DELL'EQUILIBRIO LUNGO LA VERTICALE\n")
+        
+        #print("il vettore completo delle somma delle Fz nodali è pari a: \n\n", isZero, "\n")
+        print("La Radice Quadrata della Somma dei Quadrati è pari a: ", SommaQuadrati, "\n")
+        
+        
         rmed=zrmed[Nn] 
         OKrmed=solutionZrmed.success
         if not(OKrmed): break
         if VerticalLoads: break
-        err=(rmed-rprecedente)/rprecedente
+        err=abs((rmed-rprecedente)/rprecedente)
         d=d0+rmed/r1*(d1-d0)
         rprecedente=rmed  
     
     zmed=np.delete(zrmed, Nn, axis=0)
     lzmed=np.dot(Mc.T,zmed)
     tmed=(1/rmed)*d*np.sqrt(lh**2+lzmed**2)/lh
+    
+    thmed=(1/rmed)*d
+    tmed=thmed*np.sqrt(lh**2+lzmed**2)/lh
+    tzmed=thmed*lzmed/lh
+    Rz=np.sum(tzmed[Nbi:])
+    print("Rz = ", Rz, "/",PesoTotale, " = ",Rz/PesoTotale)
+    
+    
     print ("")
     print ("file di INPUT = " + file + ".dat")
     print (attenz)
@@ -459,8 +548,8 @@ if convergenzad:
     #______________________________________________________________________________
     
     
-    tbmax=np.max(tmax)
-    tbmin=np.min(tmin)
+    tbmax=np.max([tmax, tmin,tmed])
+    tbmin=np.min([tmax, tmin,tmed])
     deltat=(tbmax-tbmin)/9
            
     #******************************************************************************
@@ -474,6 +563,9 @@ if convergenzad:
     dxf_file.write("SECTION\n")
     dxf_file.write("2\n")
     dxf_file.write("ENTITIES\n")
+    
+    
+    
     
     b=0 #itera sui branches
     while (b<Nb):
