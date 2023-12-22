@@ -734,12 +734,12 @@ for n in range(0, NumeroNodiInterni):
 for n in range(0, NumeroNodiEsterni):
     EtichettaNodo += ["NODO ESTERNO ZMINIMO"]
 
-EtichettaBranche=[]
+EtichettaBranch=[]
 for n in range(0, NumeroBranchesInterni):
-    EtichettaBranche += ["BRANCHE INTERNO"]
+    EtichettaBranch += ["BRANCHE INTERNO"]
     
 for n in range(0, NumeroBranchesEsterni):
-    EtichettaBranche += ["BRANCHE ESTERNO"]   
+    EtichettaBranch += ["BRANCHE ESTERNO"]   
 
 
 print("\nNumero Nodi Totali = ", NumeroNodiTotali)
