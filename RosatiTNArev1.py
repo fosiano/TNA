@@ -12,11 +12,46 @@ class Point:
       self.y = y
       self.z = z
 
+Radicedi2=(2.0**0.50)
+
+def CalcolaStampa(th):
+    RyLatoDown=np.sum(th[ExternalBranchesIndexesDown])    
+    RyLatoUp=np.sum(th[ExternalBranchesIndexesUp])
+    RxLatoLeft=np.sum(th[ExternalBranchesIndexesLeft])
+    RxLatoRight=np.sum(th[ExternalBranchesIndexesRight])
+    
+       
+    RDiagDownLeft=th[ExternalBranchesIndexesDiag[0]]/Radicedi2       
+    RDiagDownRight=th[ExternalBranchesIndexesDiag[1]]/Radicedi2
+    RDiagUpLeft=th[ExternalBranchesIndexesDiag[2]]/Radicedi2  
+    RDiagUpRight=th[ExternalBranchesIndexesDiag[3]]/Radicedi2  
+    
+    RyDown = RyLatoDown + RDiagDownLeft + RDiagDownRight
+    RyUp = RyLatoUp + RDiagUpLeft + RDiagUpRight
+    RxLeft = RxLatoLeft + RDiagDownLeft + RDiagUpLeft
+    RxRight = RxLatoRight + RDiagDownRight + RDiagUpRight
+    
+    Ry=RyDown-RyUp
+    Rx=RxLeft-RxRight
+    print("RyLatoDown = ", RyLatoDown, "RDiagDownLeft = ", RDiagDownLeft ,"RDiagDownRight = ",RDiagDownRight )
+    print("RyLatoUp = ", RyLatoUp, "RDiagUpLeft = ", RDiagUpLeft,"RDiagUpRight = ", RDiagUpRight)
+    
+    
+    print("RxLatoLeft = ", RxLatoLeft, "RDiagDownLeft = ", RDiagDownLeft,"RDiagUpLeft = ",  RDiagUpLeft)
+    print("RxLatoright = ", RxLatoRight, "RDiagDownRight = ", RDiagDownRight,"RDiagUpRight = ", RDiagUpRight )
+    print("RyDown = ", RyDown)
+    print("RyUp = ", RyUp)
+    print("RxLeft = ", RxLeft)
+    print("RxRight = ", RxRight)
+    print("Rx = ", Rx)
+    print("Ry = ", Ry)
+
+
 #show_options(solver= 'minimize', method='SLSQP', disp=True)
 #d=densità di forza (ex ths = "th segnato")
 
 
-file="Vela" #file di lavoro INPUT (.DAT)/OUTPUT (.DXF)
+file="VelaRect" #file di lavoro INPUT (.DAT)/OUTPUT (.DXF)
 
 #file="RosatiGroinVault" #file di lavoro INPUT (.DAT)/OUTPUT (.DXF)
 
@@ -127,9 +162,20 @@ dy=np.dot(Mc.T,y)
 lh=np.sqrt(dx**2+dy**2)
 
 line=network.readline()
-ArrayArcIndexes = np.fromstring( line[1:-2], dtype=np.int32, sep=', ' )
+ExternalBranchesIndexesDown = np.fromstring( line[1:-2], dtype=np.int32, sep=' ' )
+
 line=network.readline()
-ArrayFalseArcIndexes = np.fromstring( line[1:-2], dtype=np.int32, sep=', ' )
+ExternalBranchesIndexesUp = np.fromstring( line[1:-2], dtype=np.int32, sep=' ' )
+
+line=network.readline()
+ExternalBranchesIndexesLeft = np.fromstring( line[1:-2], dtype=np.int32, sep=' ' )
+
+line=network.readline()
+ExternalBranchesIndexesRight = np.fromstring( line[1:-2], dtype=np.int32, sep=' ' )
+
+line=network.readline()
+ExternalBranchesIndexesDiag = np.fromstring( line[1:-2], dtype=np.int32, sep=' ' )
+
 line=network.readline()
 PesoTotale=float(line)
 #qqq=np.asarray(branchesINnode)
@@ -138,7 +184,6 @@ PesoTotale=float(line)
 #print b
 network.close()
 #******************************************************************************
-
 
 ib = np.transpose(np.ones(Nb))
 unit=(np.ones(Nb)).tolist()
@@ -431,14 +476,16 @@ if convergenzad:
             attenz="r1 TR0PPO GRANDE"
             break
     
-    
     zmin=np.delete(zrmin, Nn, axis=0)
     lzmin=np.dot(Mc.T,zmin)
     thmax=(1/rmin)*d
     tmax=thmax*np.sqrt(lh**2+lzmin**2)/lh
     tzmax=thmax*lzmin/lh
     Rz=np.sum(tzmax[Nbi:])
-    print("Rz = ", Rz, "/",PesoTotale, " = ",Rz/PesoTotale)
+    print("Rz = ", Rz, "/",PesoTotale, " = ", Rz/PesoTotale)
+    
+    
+    CalcolaStampa(thmax)
     
     rprecedente=r1
     err=10
@@ -482,7 +529,7 @@ if convergenzad:
     Rz=np.sum(tzmin[Nbi:])
     print("Rz = ", Rz, "/",PesoTotale, " = ",Rz/PesoTotale)
     
-    
+    CalcolaStampa(thmin)
     
     
     rprecedente=r1
@@ -529,6 +576,7 @@ if convergenzad:
     Rz=np.sum(tzmed[Nbi:])
     print("Rz = ", Rz, "/",PesoTotale, " = ",Rz/PesoTotale)
     
+    CalcolaStampa(thmed)
     
     print ("")
     print ("file di INPUT = " + file + ".dat")
@@ -539,7 +587,7 @@ if convergenzad:
     print ("file di OUTPUT = " + file + ".dxf")       
     tempo_finale = time.time()
     print ("Impiegati ", str(tempo_finale - tempo_iniziale), " secondi per la soluzione.")
-    
+    print("Convergenza generale: "+ str(OKrmed and  OKrmax and OKrmin))
     #************solutionZ = minimize(objectiver,zmedr,method='SLSQP',constraints=consz,options={'disp': True, 'eps': 1.0e-05, 'maxiter': 500, 'ftol': 1e-05})
     
     #______________________________________________________________________________

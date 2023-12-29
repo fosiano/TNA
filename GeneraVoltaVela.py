@@ -941,6 +941,7 @@ dat_file.close()
 print ("...Elaborazione conclusa")
 print ("Dati salvati nel file " + fileName + ".DAT")
 print ("Esportati " + str(NumeroNodiTotali) + " Nodi e " + str(NumeroBranchesTotali) + " branches")
+
 tempo_finale = time.time()
 print ("Impiegati ", str(tempo_finale - tempo_iniziale), " secondi per l'esportazione.")
 
