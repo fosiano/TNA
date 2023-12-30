@@ -20,11 +20,15 @@ def PointToDXF(dxf_file, P, layer):
     dxf_file.write("30\n")
     dxf_file.write(str(P.z)+"\n")
 
-def LineToDXF(dxf_file, P1, P2, layer): 
+def LineToDXF(dxf_file, P1, P2, layer, clrlnscl=(256, 1.00)): 
     dxf_file.write("0\n")
     dxf_file.write("LINE\n")
     dxf_file.write("8\n")
     dxf_file.write(layer+"\n")
+    dxf_file.write("62\n")
+    dxf_file.write(str(clrlnscl[0])+"\n")    
+    dxf_file.write("48\n")
+    dxf_file.write(str(clrlnscl[1])+"\n")        
     dxf_file.write("10\n")  
     dxf_file.write(str(P1.x)+"\n")
     dxf_file.write("20\n")

@@ -377,7 +377,7 @@ dxf_fileName=file+"_TNA-IN.dxf"
 dxf_file = open(dxf_fileName,"w")    
 WriteIntestazioneDXF(dxf_file)
 #WriteNewLayerDXF(dxf_file, "prova", "6")
-
+ScalaForze=0.30
 b=0 #itera sui branches
 while (b<Nb):
         n=np.argmax(Mc[:,[b]]) #nodoI
@@ -395,10 +395,10 @@ while (n<Nn):
     testo=str(n+1)
     PointToDXF(dxf_file, P, NodesLayer[n])
     TextToDXF(dxf_file, P,testo,0.05,"ID-NODES")    
-    intensity=zBounds[n,1]-2.0*fz[n]
+    intensity=zBounds[n,1]-fz[n]*ScalaForze
     Pi=Point(x[n], y[n], zBounds[n,1])
     Pj=Point(x[n], y[n], intensity)      
-    LineToDXF(dxf_file, Pi, Pj, "fz")
+    LineToDXF(dxf_file, Pi, Pj, "fz", (6, 1.00))
     n+=1    
 CloseWrittenDXF(dxf_file)    
      
@@ -616,16 +616,20 @@ if convergenzad:
     #******************************************************************************
     #SALVA IN DXF INPUT - OUTPUT
     #******************************************************************************
-    dxf_file = open(file+"_TNA-OUT.dxf","w")
+# =============================================================================
+#     dxf_file = open(file+"_TNA-OUT.dxf","w")
+#     
+#     dxf_file.write("999\n")
+#     dxf_file.write("DXF created from myself (Fortunato Siano)\n")
+#     dxf_file.write("0\n")
+#     dxf_file.write("SECTION\n")
+#     dxf_file.write("2\n")
+#     dxf_file.write("ENTITIES\n")
+# =============================================================================
     force_file = open(file+"_TNA-OUT.frc","w")
-    dxf_file.write("999\n")
-    dxf_file.write("DXF created from myself (Fortunato Siano)\n")
-    dxf_file.write("0\n")
-    dxf_file.write("SECTION\n")
-    dxf_file.write("2\n")
-    dxf_file.write("ENTITIES\n")
-    
-    
+    dxf_fileName=file+"_TNA-OUT.dxf"
+    dxf_file = open(dxf_fileName,"w")    
+    WriteIntestazioneDXF(dxf_file)
     
     
     b=0 #itera sui branches
@@ -634,232 +638,65 @@ if convergenzad:
             m=np.argmin(Mc[:,[b]]) #nodoJ
             #'''
             color=21+20*int(np.around((tmax[b]-tbmin)/deltat,decimals=0))
-            dxf_file.write("0\n")
-            dxf_file.write("LINE\n")
-            dxf_file.write("8\n")
-            dxf_file.write("MAXSPINTA\n")
-            dxf_file.write("62\n")       
-            dxf_file.write(str(color)+"\n") 
-            dxf_file.write("48\n")       
-            dxf_file.write(str(tmax[b])+"\n")                    
-            dxf_file.write("10\n")  
-            dxf_file.write(str(x[n])+"\n")
-            dxf_file.write("20\n")
-            dxf_file.write(str(y[n])+"\n")
-            dxf_file.write("30\n")
-            dxf_file.write(str(zrmin[n])+"\n")
-            dxf_file.write("11\n")
-            dxf_file.write(str(x[m])+"\n")
-            dxf_file.write("21\n")
-            dxf_file.write(str(y[m])+"\n")
-            dxf_file.write("31\n")
-            dxf_file.write(str(zrmin[m])+"\n")
-
-            color=21+20*int(np.around((tmin[b]-tbmin)/deltat,decimals=0))     
-            dxf_file.write("0\n")
-            dxf_file.write("LINE\n")
-            dxf_file.write("8\n")
-            dxf_file.write("MINSPINTA\n")
-            dxf_file.write("62\n")
-            dxf_file.write(str(color)+"\n")
-            dxf_file.write("48\n")       
-            dxf_file.write(str(tmin[b])+"\n")  
-            dxf_file.write("10\n")  
-            dxf_file.write(str(x[n])+"\n")
-            dxf_file.write("20\n")
-            dxf_file.write(str(y[n])+"\n")
-            dxf_file.write("30\n")
-            dxf_file.write(str(zrmax[n])+"\n")
-            dxf_file.write("11\n")
-            dxf_file.write(str(x[m])+"\n")
-            dxf_file.write("21\n")
-            dxf_file.write(str(y[m])+"\n")
-            dxf_file.write("31\n")
-            dxf_file.write(str(zrmax[m])+"\n")
-
-            color=21+20*int(np.around((tmed[b]-tbmin)/deltat,decimals=0))    
-            dxf_file.write("0\n")
-            dxf_file.write("LINE\n")
-            dxf_file.write("8\n")
-            dxf_file.write("MEDIONETWORK\n")
-            dxf_file.write("62\n")
-            dxf_file.write(str(color)+"\n")
-            dxf_file.write("48\n")       
-            dxf_file.write(str(tmed[b])+"\n")  
-            dxf_file.write("10\n")  
-            dxf_file.write(str(x[n])+"\n")
-            dxf_file.write("20\n")
-            dxf_file.write(str(y[n])+"\n")
-            dxf_file.write("30\n")
-            dxf_file.write(str(zrmed[n])+"\n")
-            dxf_file.write("11\n")
-            dxf_file.write(str(x[m])+"\n")
-            dxf_file.write("21\n")
-            dxf_file.write(str(y[m])+"\n")
-            dxf_file.write("31\n")
-            dxf_file.write(str(zrmed[m])+"\n")
-    
-            dxf_file.write("0\n")
-            dxf_file.write("LINE\n")
-            dxf_file.write("8\n")
-            dxf_file.write("ASSE\n")
-            dxf_file.write("62\n")
-            dxf_file.write("253\n")
-            dxf_file.write("10\n")  
-            dxf_file.write(str(x[n])+"\n")
-            dxf_file.write("20\n")
-            dxf_file.write(str(y[n])+"\n")
-            dxf_file.write("30\n")
-            dxf_file.write(str(zmedr[n])+"\n")
-            dxf_file.write("11\n")
-            dxf_file.write(str(x[m])+"\n")
-            dxf_file.write("21\n")
-            dxf_file.write(str(y[m])+"\n")
-            dxf_file.write("31\n")
-            dxf_file.write(str(zmedr[m])+"\n")
-            #'''
-            dxf_file.write("0\n")
-            dxf_file.write("LINE\n")
-            dxf_file.write("8\n")
-            dxf_file.write("INTRADOSSO\n")
-            dxf_file.write("62\n")
-            dxf_file.write("256\n")
-            dxf_file.write("10\n")  
-            dxf_file.write(str(x[n])+"\n")
-            dxf_file.write("20\n")
-            dxf_file.write(str(y[n])+"\n")
-            dxf_file.write("30\n")
-            dxf_file.write(str(zBounds[n,0])+"\n")
-            dxf_file.write("11\n")
-            dxf_file.write(str(x[m])+"\n")
-            dxf_file.write("21\n")
-            dxf_file.write(str(y[m])+"\n")
-            dxf_file.write("31\n")
-            dxf_file.write(str(zBounds[m,0])+"\n")    
+            Pi=Point(x[n], y[n], zrmin[n])
+            Pj=Point(x[m], y[m], zrmin[m])
+            LineToDXF(dxf_file, Pi, Pj, "MAXSPINTA", (color, tmax[b])) 
             
-            dxf_file.write("0\n")
-            dxf_file.write("LINE\n")
-            dxf_file.write("8\n")
-            dxf_file.write("ESTRADOSSO\n")
-            dxf_file.write("62\n")
-            dxf_file.write("256\n")
-            dxf_file.write("10\n")  
-            dxf_file.write(str(x[n])+"\n")
-            dxf_file.write("20\n")
-            dxf_file.write(str(y[n])+"\n")
-            dxf_file.write("30\n")
-            dxf_file.write(str(zBounds[n,1])+"\n")
-            dxf_file.write("11\n")
-            dxf_file.write(str(x[m])+"\n")
-            dxf_file.write("21\n")
-            dxf_file.write(str(y[m])+"\n")
-            dxf_file.write("31\n")
-            dxf_file.write(str(zBounds[m,1])+"\n")     
-            '''
-            dxf_file.write("0\n")
-            dxf_file.write("LINE\n")
-            dxf_file.write("8\n")
-            dxf_file.write("lim-inf\n")
-            dxf_file.write("62\n")
-            dxf_file.write("13\n")
-            dxf_file.write("10\n")  
-            dxf_file.write(str(x[n])+"\n")
-            dxf_file.write("20\n")
-            dxf_file.write(str(y[n])+"\n")
-            dxf_file.write("30\n")
-            dxf_file.write(str(zBoundsRID[n,0])+"\n")
-            dxf_file.write("11\n")
-            dxf_file.write(str(x[m])+"\n")
-            dxf_file.write("21\n")
-            dxf_file.write(str(y[m])+"\n")
-            dxf_file.write("31\n")
-            dxf_file.write(str(zBoundsRID[m,0])+"\n")    
+            color=21+20*int(np.around((tmin[b]-tbmin)/deltat,decimals=0))    
+            Pi=Point(x[n], y[n], zrmax[n])
+            Pj=Point(x[m], y[m], zrmax[m])
+            LineToDXF(dxf_file, Pi, Pj, "MINSPINTA", (color, tmin[b])) 
+          
+            color=21+20*int(np.around((tmed[b]-tbmin)/deltat,decimals=0))  
+            Pi=Point(x[n], y[n], zrmed[n])
+            Pj=Point(x[m], y[m], zrmed[m])
+            LineToDXF(dxf_file, Pi, Pj, "MEDIONETWORK", (color, tmed[b])) 
+                          
+            Pi=Point(x[n], y[n], zmedr[n])
+            Pj=Point(x[m], y[m], zmedr[m])
+            LineToDXF(dxf_file, Pi, Pj, "ASSE", (253, 1.00)) 
+          
+            Pi=Point(x[n], y[n], zBounds[n,0])
+            Pj=Point(x[m], y[m], zBounds[m,0])
+            LineToDXF(dxf_file, Pi, Pj, "INTRADOSSO")                
             
-            dxf_file.write("0\n")
-            dxf_file.write("LINE\n")
-            dxf_file.write("8\n")
-            dxf_file.write("lim-sup\n")
-            dxf_file.write("62\n")
-            dxf_file.write("14\n")
-            dxf_file.write("10\n")  
-            dxf_file.write(str(x[n])+"\n")
-            dxf_file.write("20\n")
-            dxf_file.write(str(y[n])+"\n")
-            dxf_file.write("30\n")
-            dxf_file.write(str(zBoundsRID[n,1])+"\n")
-            dxf_file.write("11\n")
-            dxf_file.write(str(x[m])+"\n")
-            dxf_file.write("21\n")
-            dxf_file.write(str(y[m])+"\n")
-            dxf_file.write("31\n")
-            dxf_file.write(str(zBoundsRID[m,1])+"\n")           
-            '''
+            Pi=Point(x[n], y[n], zBounds[n,1])
+            Pj=Point(x[m], y[m], zBounds[m,1])      
+            LineToDXF(dxf_file, Pi, Pj, "ESTRADOSSO") 
+            
+            
+# =============================================================================
+#EVENTUALE
+#             Pi=Point(x[n], y[n], zBoundsRID[n,0])
+#             Pj=Point(x[m], y[m], zBoundsRID[m,0])      
+#             LineToDXF(dxf_file, Pi, Pj, "lim-inf") 
+# 
+#             Pi=Point(x[n], y[n], zBoundsRID[n,1])
+#             Pj=Point(x[m], y[m], zBoundsRID[m,1])      
+#             LineToDXF(dxf_file, Pi, Pj, "lim-sup") 
+# =============================================================================
+                      
             force_file.write(str(b)+", "+str(n)+", "+str(m)+", "+str(tmin[b])+", "+str(tmed[b])+", "+str(tmax[b])+"\n")              
-            
-            
+                        
             b+=1
     
     n=0 #itera sui nodes
-    while (n<Nn):      
-            dxf_file.write("0\n")
-            dxf_file.write("POINT\n")
-            dxf_file.write("8\n")
-            #if tipo[n]==1:
-            #    dxf_file.write("NODES-I\n")
-            #else:
-            #    dxf_file.write("NODES-E\n")        
-            dxf_file.write(NodesLayer[n]+"\n")
-            dxf_file.write("10\n")  
-            dxf_file.write(str(x[n])+"\n")
-            dxf_file.write("20\n")
-            dxf_file.write(str(y[n])+"\n")
-            dxf_file.write("30\n")
-            dxf_file.write(str(zBounds[n,0])+"\n")
-      
-            dxf_file.write("0\n")
-            dxf_file.write("TEXT\n")
-            dxf_file.write("8\n")
-            dxf_file.write("ID-NODES\n")     
-            dxf_file.write("10\n")  
-            dxf_file.write(str(x[n])+"\n")
-            dxf_file.write("20\n")
-            dxf_file.write(str(y[n])+"\n")
-            dxf_file.write("30\n")
-            dxf_file.write(str(zBounds[n,0])+"\n")
-            dxf_file.write("40\n")
-            dxf_file.write("0.15\n")
-            dxf_file.write("1\n")
-            dxf_file.write(str(n+1)+"\n")
-            
-        
-            dxf_file.write("0\n")
-            dxf_file.write("LINE\n")
-            dxf_file.write("8\n")
-            dxf_file.write("fz\n")
-            dxf_file.write("62\n")
-            dxf_file.write("7\n")
-            dxf_file.write("10\n")  
-            dxf_file.write(str(x[n])+"\n")
-            dxf_file.write("20\n")
-            dxf_file.write(str(y[n])+"\n")
-            dxf_file.write("30\n")
-            dxf_file.write(str(zBounds[n,1])+"\n")
-            dxf_file.write("11\n")
-            dxf_file.write(str(x[n])+"\n")
-            dxf_file.write("21\n")
-            dxf_file.write(str(y[n])+"\n")
-            dxf_file.write("31\n")
-            dxf_file.write(str(zBounds[n,1]-2.0*fz[n,0])+"\n")    
-            #dxf_file.write(str(zBounds[n,1]-2.0*fz[n])+"\n")   
-                  
+    while (n<Nn):  
+            P=Point(x[n], y[n], zBounds[n,0])
+            testo=str(n+1)
+            PointToDXF(dxf_file, P, NodesLayer[n])
+            TextToDXF(dxf_file, P,testo,0.05,"ID-NODES") 
+          
+            intensity=zBounds[n,1]-fz[n,0]*ScalaForze
+            Pi=Point(x[n], y[n], zBounds[n,1])
+            Pj=Point(x[n], y[n], intensity)      
+            LineToDXF(dxf_file, Pi, Pj, "fz", (6, 1.00))
+
             n+=1
-            
-    dxf_file.write("0\n")
-    dxf_file.write("ENDSEC\n")
-    dxf_file.write("0\n")
-    dxf_file.write("EOF\n")
+               
     
-    dxf_file.close()
+    CloseWrittenDXF(dxf_file)  
+    
     force_file.close()
 else:
     print ("L'ottimizzazione di d non converge")
