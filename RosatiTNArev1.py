@@ -25,6 +25,12 @@ def CalcolaStampa(th):
     RDiagDownRight=th[ExternalBranchesIndexesDiag[1]]/Radicedi2
     RDiagUpLeft=th[ExternalBranchesIndexesDiag[2]]/Radicedi2  
     RDiagUpRight=th[ExternalBranchesIndexesDiag[3]]/Radicedi2  
+    if len(ExternalBranchesIndexesDiag)== 8:
+        RDiagDownLeft+=th[ExternalBranchesIndexesDiag[4]]/Radicedi2       
+        RDiagDownRight+=th[ExternalBranchesIndexesDiag[5]]/Radicedi2
+        RDiagUpLeft+=th[ExternalBranchesIndexesDiag[6]]/Radicedi2  
+        RDiagUpRight+=th[ExternalBranchesIndexesDiag[7]]/Radicedi2   
+    
     
     RyDown = RyLatoDown + RDiagDownLeft + RDiagDownRight
     RyUp = RyLatoUp + RDiagUpLeft + RDiagUpRight
@@ -161,20 +167,20 @@ dx=np.dot(Mc.T,x)
 dy=np.dot(Mc.T,y)
 lh=np.sqrt(dx**2+dy**2)
 
-line=network.readline()
-ExternalBranchesIndexesDown = np.fromstring( line[1:-2], dtype=np.int32, sep=' ' )
+def leggiArray(file):
+    line=file.readline()
+    while not ("]" in line):
+        lineAdd=file.readline()
+        line += lineAdd
+    ar=np.fromstring( line[1:-2], dtype=np.int32, sep=' ' )    
+    return ar
 
-line=network.readline()
-ExternalBranchesIndexesUp = np.fromstring( line[1:-2], dtype=np.int32, sep=' ' )
 
-line=network.readline()
-ExternalBranchesIndexesLeft = np.fromstring( line[1:-2], dtype=np.int32, sep=' ' )
-
-line=network.readline()
-ExternalBranchesIndexesRight = np.fromstring( line[1:-2], dtype=np.int32, sep=' ' )
-
-line=network.readline()
-ExternalBranchesIndexesDiag = np.fromstring( line[1:-2], dtype=np.int32, sep=' ' )
+ExternalBranchesIndexesDown = leggiArray(network) 
+ExternalBranchesIndexesUp = leggiArray(network) 
+ExternalBranchesIndexesLeft = leggiArray(network) 
+ExternalBranchesIndexesRight = leggiArray(network) 
+ExternalBranchesIndexesDiag = leggiArray(network) 
 
 line=network.readline()
 PesoTotale=float(line)
