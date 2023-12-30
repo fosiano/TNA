@@ -208,17 +208,18 @@ ZoX=Zo2+(Zo2-Zo1)*delta/r
 ZoY=ZoX
 zo=Ze[0]+(Ze[0]-R)*delta*Radicedi2/R
 Zo=[zo, zo, zo, zo]
-if ExternalArches:
-    ZoY=Ze[YlistSx]-spessoreVOLTA/2
-    Zo=np.hstack((Zo, Zo))
-
-ZeExtrnl=np.hstack((ZoX, ZoX, ZoY, ZoY, Zo)) 
 
 ZiExtrnlX=Zi[XlistDown]-np.ones(len(XlistDown))*(+5.0)
-ZiExtrnlY=Zi[YlistSx]+spessoreVOLTA/4
 ZiExtrnlS=Zi[Spigolilist]-np.ones(len(Spigolilist))*(+5.0)
+ZiExtrnlY=Zi[YlistSx]-np.ones(len(YlistSx))*(+5.0)
+if ExternalArches:
+    #ZoYmed=(Ze[YlistSx]+Zi[YlistSx])/2
+    ZoY=Ze[YlistSx]#ZoYmed*1.01  
+    ZiExtrnlY=Zi[YlistSx]#ZoYmed*0.99  
+    Zo=np.hstack((Zo, Zo))
+    
+ZeExtrnl=np.hstack((ZoX, ZoX, ZoY, ZoY, Zo)) 
 
-Spigolilist
 
 #ZeExtrnl=Ze[listBrd]
 
@@ -289,6 +290,8 @@ if infittimentoSpigoli:
     nodoJ=NumeroNodiXY-1
     Branches.append((nodoI,nodoJ))    
 
+BranchesXmaxIndex=len(Branches)-1
+
 #GENERAZIONE BRANCHES Y  
 nodoJ0=0
 if infittimentoSpigoli:
@@ -344,6 +347,11 @@ if infittimentoSpigoli:
     Branches.append((nodoI,nodoJ))
 
 numeroBrachesXYo=len(Branches)
+
+BranchesYmaxIndex=numeroBrachesXYo-1
+
+listBranchesX=np.arange(0, BranchesXmaxIndex+1)
+listBranchesY=np.arange(BranchesXmaxIndex+1, BranchesYmaxIndex+1)
 
 #GENERAZIONE BRANCHES INFITTIMENTO SPIGOLI
 listBranchesSpigoliAdd=[]
@@ -486,6 +494,9 @@ if ExternalArches:
         nodoI=listRightArch[n]
         Branches.append((nodoI,nodoJ))
         n += 1
+    
+    listBranchesXArches=np.arange(numeroBrachesVolta, len(Branches))
+    
     n=0
     for nodoJ in listLeftArch[1:]: 
         nodoI=listLeftArch[n]
@@ -507,11 +518,27 @@ for nodoJ in listExtrnl:
     n += 1
     
 numeroBrachesTotali=len(Branches)
-listBranchesDiagonaliE=np.arange(numeroBrachesTotali-4, numeroBrachesTotali)
+
+numeroBranchesExtrnl=len(listExtrnl)
+
+numeroBranchesDiag=4
+if ExternalArches:
+    numeroBranchesDiag=8
+
+numeroBranchesExtrnlXY=int((numeroBranchesExtrnl-numeroBranchesDiag)/2)
+
+listBranchesEsterniY = np.arange(numeroBrachesInterni, numeroBrachesInterni+numeroBranchesExtrnlXY)
+listBranchesEsterniX = np.arange(numeroBrachesInterni+numeroBranchesExtrnlXY, numeroBrachesInterni+2*numeroBranchesExtrnlXY)
+
+listBranchesDiagonaliE=np.arange(numeroBrachesInterni+2*numeroBranchesExtrnlXY, numeroBrachesTotali)
+
 listBranchesDiagonali=np.hstack((listBranchesDiagonali,listBranchesDiagonaliE))
 NumeroBranchesEsterni=numeroBrachesTotali-numeroBrachesInterni
 
 listBranchesEsterni = np.arange(numeroBrachesInterni, numeroBrachesTotali)
+
+listBranchesX=np.hstack((listBranchesX, listBranchesXArches, listBranchesEsterniX))
+listBranchesY=np.hstack((listBranchesY,  listBranchesEsterniY))
 
 #GENERAZIONE FACES
 Faces=[]
@@ -805,15 +832,16 @@ while (n<NumeroNodiTotali):
 
 dat_file.write(str(numeroBrachesTotali)+"  "+ str(NumeroBranchesEsterni)+"\n")
 
-dminMeridiani=0.10#0.5
-dminDiagonali=.10
-dminSpigoli=0.05
+dminBrachesX=0.10#0.5
+dminBrachesY=0.20#0.5
+dminBrachesDiagonali=.30
+dminBrachesInfittimentoSpigoli=0.05
 
-branchesdmin=np.ones(numeroBrachesTotali)*dminMeridiani
+branchesdmin=np.ones(numeroBrachesTotali)*dminBrachesX
+branchesdmin[listBranchesY]=dminBrachesY
+branchesdmin[listBranchesSpigoliAdd]=np.ones(len(listBranchesSpigoliAdd))*dminBrachesInfittimentoSpigoli
 
-branchesdmin[listBranchesSpigoliAdd]=np.ones(len(listBranchesSpigoliAdd))*dminSpigoli
-
-branchesdmin[listBranchesDiagonali]=np.ones(len(listBranchesDiagonali))*dminDiagonali
+branchesdmin[listBranchesDiagonali]=np.ones(len(listBranchesDiagonali))*dminBrachesDiagonali
 
 for n in range(0, numeroBrachesTotali): 
     branch=Branches[n]
@@ -830,6 +858,8 @@ dat_file.write(str(listBranchesEsterni[nNLt:2*nNLt])+ "\n")
 dat_file.write(str(listBranchesEsterni[2*nNLt:3*nNLt])+ "\n")
 dat_file.write(str(listBranchesEsterni[3*nNLt:4*nNLt])+ "\n")
 dat_file.write(str(listBranchesEsterni[4*nNLt:])+ "\n")
+dat_file.write(str(np.hstack((listLeftArch[1:-1], listRightArch[1:-1])))+ "\n")
+dat_file.write(str(np.hstack((listExtrnlYSx, listExtrnlYDx)))+ "\n")
 dat_file.write(str(PesoTotale))
 dat_file.close()
 

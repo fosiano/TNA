@@ -25,7 +25,7 @@ def CalcolaStampa(th):
     RDiagDownRight=th[ExternalBranchesIndexesDiag[1]]/Radicedi2
     RDiagUpLeft=th[ExternalBranchesIndexesDiag[2]]/Radicedi2  
     RDiagUpRight=th[ExternalBranchesIndexesDiag[3]]/Radicedi2  
-    if len(ExternalBranchesIndexesDiag)== 8:
+    if len(ExternalBranchesIndexesDiag) == 8:
         RDiagDownLeft+=th[ExternalBranchesIndexesDiag[4]]/Radicedi2       
         RDiagDownRight+=th[ExternalBranchesIndexesDiag[5]]/Radicedi2
         RDiagUpLeft+=th[ExternalBranchesIndexesDiag[6]]/Radicedi2  
@@ -182,6 +182,10 @@ ExternalBranchesIndexesLeft = leggiArray(network)
 ExternalBranchesIndexesRight = leggiArray(network) 
 ExternalBranchesIndexesDiag = leggiArray(network) 
 
+ArcNodeIndexes = leggiArray(network) 
+ExternalArcNodeIndexes = leggiArray(network) 
+
+
 line=network.readline()
 PesoTotale=float(line)
 #qqq=np.asarray(branchesINnode)
@@ -221,8 +225,11 @@ def equilibrioZ(zr):
 
 def equalZ(zr):
    #a=np.zeros(len(zr))
-   a=zr.take(ArrayArcIndexes)
-   b=zr.take(ArrayFalseArcIndexes)
+   # a=zr.take(ArrayArcIndexes)
+   # b=zr.take(ArrayFalseArcIndexes)
+   
+   a=zr.take(ArcNodeIndexes)
+   b=zr.take(ExternalArcNodeIndexes  )
    c=a-b
    return c
         
@@ -455,10 +462,10 @@ if convergenzad:
 #         
 #         
 # =============================================================================
-        solutionZrmin = minimize(objectiverp, zmedr, method='SLSQP',bounds=bnds, constraints=[equZ], 
+        solutionZrmin = minimize(objectiverp, zmedr, method='SLSQP',bounds=bnds, constraints=[equZ, asseSimm], 
                                  jac=DERobjectiverp, callback=callbackFZrp, 
                                  options={'disp': True, 'maxiter': itermax, 'ftol': tolopt})
- 
+  
         zrmin = solutionZrmin.x #Shallowest configuration network (maximum thrust)
         
         isZero=equilibrioZ(zrmin)
@@ -508,7 +515,7 @@ if convergenzad:
         
         #deepest configuration network (minimum thrust) ///////, jac=DERobjectivern
         Nfeval=1
-        solutionZrmax = minimize(objectivern,zmedr,method='SLSQP',bounds=bnds, constraints=equZ, jac=DERobjectivern, callback=callbackFZrn, options={'disp': True, 'maxiter': itermax,  'ftol': tolopt})
+        solutionZrmax = minimize(objectivern,zmedr,method='SLSQP',bounds=bnds, constraints=[equZ, asseSimm], jac=DERobjectivern, callback=callbackFZrn, options={'disp': True, 'maxiter': itermax,  'ftol': tolopt})
         zrmax = solutionZrmax.x #deepest configuration network (minimum thrust)
         isZero=equilibrioZ(zrmax)
         SommaQuadrati=np.sqrt(np.sum(isZero*isZero))
@@ -553,7 +560,7 @@ if convergenzad:
            
         #CURVA CHE APPROSSIMA MEGLIO LA SUPERFICIE MEDIA DELLA VOLATA
         Nfeval=1
-        solutionZrmed = minimize(objectivermed,zmedr,method='SLSQP',bounds=bnds, constraints=equZ, callback=callbackFZmed, options={'disp': True, 'maxiter': itermax,'ftol': tolopt})
+        solutionZrmed = minimize(objectivermed,zmedr,method='SLSQP',bounds=bnds, constraints=[equZ, asseSimm], callback=callbackFZmed, options={'disp': True, 'maxiter': itermax,'ftol': tolopt})
         zrmed = solutionZrmed.x #
         
         isZero=equilibrioZ(zrmed)
@@ -857,21 +864,6 @@ if convergenzad:
 else:
     print ("L'ottimizzazione di d non converge")
 #******************************************************************************
-
-
-#PER IL CALCOLO DELL'AREA INCIDENTE SUL NODO
-#x=np.array([5.0,6.0,7.0])
-#y=np.array([8.0,9.0,10.0])
-#alfa=np.arctan2(y,x)
-#orderIndex=np.argsort(alfa)
-
-#???
-#q=np.array([3,1,2])
-#q=np.matrix(q).T
-#alfa1=np.append(alfa, q, axis=1)
-#alfa1[np.argsort(alfa1.A[:, 0])]
-# alfa1[np.lexsort(np.fliplr(alfa1).T)]
-#non SERVE if alfa<0:alfa=(2*np.pi + alfa)
 
 
 '''
