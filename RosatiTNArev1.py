@@ -435,6 +435,8 @@ if convergenzad:
         attenz="OK: Soluzione valida per carichi anche orizzontali poichè r1<rmin"
     else:
         attenz="OK: Soluzione valida per soli carichi verticali"       
+    
+    
     rprecedente=r1
     err=10
     #INIZIO PRCEDURA ITERATIVA
@@ -444,7 +446,7 @@ if convergenzad:
     d=np.array(d1)
     while (err>tol):
         niterMIN+=1    
-        Do=np.dot(Mc*(d/lh),Mc.T)  
+        Do=np.dot(Mc*(d/lh), Mc.T)  
         D=np.append(Do, fz, axis=1)
         D=np.delete(D, exttpl, axis=0)
         
@@ -462,7 +464,8 @@ if convergenzad:
 #         
 #         
 # =============================================================================
-        solutionZrmin = minimize(objectiverp, zmedr, method='SLSQP',bounds=bnds, constraints=[equZ, asseSimm], 
+        solutionZrmin = minimize(objectiverp, zmedr, method='SLSQP',
+                                 bounds=bnds, constraints=[equZ, asseSimm], 
                                  jac=DERobjectiverp, callback=callbackFZrp, 
                                  options={'disp': True, 'maxiter': itermax, 'ftol': tolopt})
   
@@ -499,6 +502,8 @@ if convergenzad:
     
     
     CalcolaStampa(thmax)
+    
+    
     
     rprecedente=r1
     err=10

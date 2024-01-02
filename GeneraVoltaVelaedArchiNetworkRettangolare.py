@@ -6,7 +6,7 @@ Created on Mon Nov 20 17:11:15 2023
 
 Aggiunti Archi Laterali
 """
-
+import csv
 from math import *
 from decimal import *
 import time
@@ -552,64 +552,88 @@ if infittimentoSpigoli:
         nodoI=nodoVertice
         nodoJ=NumeroNodiXY+8+w
         nodoK=NumeroNodiXY+w*4
-        Faces.append((nodoI,nodoJ,nodoK,nodoI))
+        face=(nodoI,nodoJ,nodoK,nodoI)
+        if w==1: face=face[::-1]
+        Faces.append(face)
         
         nodoI=nodoJ
         nodoJ=1+(NumeroNodiLATO-3)*w
         nodoL=nodoK
         nodoK=nodoL+1
-        Faces.append((nodoI,nodoJ,nodoK,nodoL))    
+        face=(nodoI,nodoJ,nodoK,nodoL)
+        if w==1: face=face[::-1]
+        Faces.append(face)    
         
         nodoI=nodoJ
         nodoJ=nodoI+NumeroNodiLATO
-        Faces.append((nodoI,nodoJ,nodoK,nodoK))   
+        face=(nodoI,nodoJ,nodoK,nodoK)
+        if w==1: face=face[::-1]
+        Faces.append(face)   
       
         nodoI=w*(NumeroNodiLATO-1)
         nodoJ=NumeroNodiXY+w*4
         nodoK=NumeroNodiXY+12+w*2
-        Faces.append((nodoI,nodoJ,nodoK,nodoI))
+        face=(nodoI,nodoJ,nodoK,nodoI)
+        if w==1: face=face[::-1]
+        Faces.append(face)
            
         nodoI=nodoJ
         nodoJ += 1
         nodoL=nodoK
         nodoK=w*(NumeroNodiLATO-1)+NumeroNodiLATO 
-        Faces.append((nodoI,nodoJ,nodoK,nodoL))    
+        face=(nodoI,nodoJ,nodoK,nodoL)
+        if w==1: face=face[::-1]
+        Faces.append(face)    
            
         nodoI=nodoJ
         nodoJ=nodoVertice+NumeroNodiLATO+1-2*w
-        Faces.append((nodoI,nodoJ,nodoK,nodoK))   
+        face=(nodoI,nodoJ,nodoK,nodoK)
+        if w==1: face=face[::-1]
+        Faces.append(face)   
     
     for w in range(0, 2):
         nodoVertice=w*(NumeroNodiLATO-1)+NumeroNodiLATO*(NumeroNodiLATO-1)
         nodoI=nodoVertice
         nodoJ=NumeroNodiXY+10+w
         nodoK=NumeroNodiXY+7-w*4
-        Faces.append((nodoI,nodoJ,nodoK,nodoI))
+        face=(nodoI,nodoJ,nodoK,nodoI)
+        if w==0: face=face[::-1]
+        Faces.append(face)
         
         nodoI=nodoJ
         nodoJ=nodoVertice+1-2*w
         nodoL=nodoK
         nodoK=nodoL-1
-        Faces.append((nodoI,nodoJ,nodoK,nodoL))    
+        face=(nodoI,nodoJ,nodoK,nodoL)
+        if w==0: face=face[::-1]
+        Faces.append(face)    
         
         nodoI=nodoJ
         nodoJ=nodoI-NumeroNodiLATO
-        Faces.append((nodoI,nodoJ,nodoK,nodoK))   
+        face=(nodoI,nodoJ,nodoK,nodoK)
+        if w==0: face=face[::-1]
+        Faces.append(face)   
       
         nodoI=nodoVertice
         nodoJ=NumeroNodiXY+7-w*4
         nodoK=NumeroNodiXY+13+w*2
-        Faces.append((nodoI,nodoJ,nodoK,nodoI))
+        face=(nodoI,nodoJ,nodoK,nodoI)
+        if w==0: face=face[::-1]
+        Faces.append(face)
            
         nodoI=nodoJ
         nodoJ -= 1
         nodoL=nodoK
         nodoK=nodoVertice-NumeroNodiLATO 
-        Faces.append((nodoI,nodoJ,nodoK,nodoL))    
+        face=(nodoI,nodoJ,nodoK,nodoL)
+        if w==0: face=face[::-1]
+        Faces.append(face)    
            
         nodoI=nodoJ
         nodoJ=nodoVertice-NumeroNodiLATO+1-2*w
-        Faces.append((nodoI,nodoJ,nodoK,nodoK))     
+        face=(nodoI,nodoJ,nodoK,nodoK)
+        if w==0: face=face[::-1]
+        Faces.append(face)     
     
 
 for iy in range(0, NumeroNodiLATO-1):
@@ -632,10 +656,10 @@ if ExternalArches:
         Faces.append((nodoI,nodoJ,nodoK,nodoL))
         n += 1
     n=0
-    for nodoI in listRightArch[:-1]: 
-        nodoJ = YBorderlistDx[n]
-        nodoK=YBorderlistDx[n+1]
-        nodoL=listRightArch[n+1]
+    for nodoJ in listRightArch[:-1]: 
+        nodoI = YBorderlistDx[n]
+        nodoL=YBorderlistDx[n+1]
+        nodoK=listRightArch[n+1]
         Faces.append((nodoI,nodoJ,nodoK,nodoL))
         n += 1
     
@@ -869,4 +893,25 @@ print ("Esportati ", str(NumeroNodiTotali), " Nodi e ",
        str(numeroBrachesTotali),  " branches", )
 tempo_finale = time.time()
 print ("Impiegati ", str(tempo_finale - tempo_iniziale), " secondi per la generazione dei dati e la creazione dei file.")
+
+filename='Faces.csv'
+with open(filename, 'w', newline='') as csvfile:
+    csvwriter=csv.writer(csvfile)
+    csvwriter.writerows(Faces)
+
+    
+filename='Edges.csv'
+with open(filename, 'w', newline='') as csvfile:
+    csvwriter=csv.writer(csvfile)
+    csvwriter.writerows(Branches)    
+
+filename='VerticesLowerBounds.csv'
+with open(filename, 'w', newline='') as csvfile:
+    csvwriter=csv.writer(csvfile)
+    csvwriter.writerows(np.vstack((XY.T, Zi)).T)     
+
+filename='VerticesUpperBounds.csv'
+with open(filename, 'w', newline='') as csvfile:
+    csvwriter=csv.writer(csvfile)
+    csvwriter.writerows(np.vstack((XY.T, Ze)).T)     
 
