@@ -6,7 +6,19 @@ import mathutils
 import math
 from mathutils import Matrix 
 
-# minuto 8:50
+
+
+def makeMaterial(name, diffuse, metallic, roughness):
+    mat = bpy.data.materials.new(name)
+    mat.diffuse_color = diffuse
+    mat.metallic = metallic
+    mat.roughness = roughness    
+    return mat
+
+def setMaterial(ob, mat):
+    me = ob.data
+    me.materials.append(mat)
+
 
 def importData():
     lowerVertices = genfromtxt('E:\Archivio Lavori\Sviluppo\TNA\VerticesLowerBounds.csv', delimiter = ',')
@@ -17,15 +29,117 @@ def importData():
     #color = genfromtxt('Member-Color.csv', delimiter = ';')
     return lowerVertices, upperVertices, edges, faces #, color
 
+def calculateRotationMatrix(Pi, Pj):
+    R = np.identity(4)
+    ix = Pi[0]
+    iy = Pi[1]
+    iz = Pi[2]
+    
+    jx = Pj[0]
+    jy = Pj[1]
+    jz = Pj[2]   
+    
+    dx = jx-ix
+    dy = jy-iy
+    dz = jz-iz
+    
+    length = math.sqrt(dx**2+dy**2+dz**2) #Magnitude of vector (lehgth of member)
+    
+    
+    if (abs(dx)<0.001 and abs(dy)<0.001):
+        #Element is vertical - offset in positive global x to define local z-x plane
+        i_offset = np.array([ix+1, iy, iz]) #Offset node i by 1m in positive global x-direction
+        j_offset = np.array([jx+1, jy, jz]) #Offset node j by 1m in positive global x-direction
+    else:
+        #Element is not vertical - offset in positive global z to define local x-z plane
+        i_offset = np.array([ix, iy, iz+1]) #Offset node i by 1m in positive global z-direction
+        j_offset = np.array([jx, jy, jz+1]) #Offset node j by 1m in positive global z-direction
+    
+    node_k = i_offset + 0.50*(j_offset - i_offset) # Point in the local x-y plane
+    
+        
+    #Local z-vector in global RF running along the member
+    local_z_vector = np.array(Pj) - np.array(Pi) # Vector along local z-axis
+    local_z_unit = local_z_vector/length #Local unit vector defininf local z-axis
+    
+    #Local x-vector in global RF using Gram-Schmidt process
+    vector_in_plane = node_k - Pi #Vector in the x-y plane
+    local_x_vector = vector_in_plane - np.dot(vector_in_plane, local_z_unit)*local_z_unit #local x-vector in RF (Gram-Schmidt)
+    magX = math.sqrt(local_x_vector[0]**2+local_x_vector[1]**2+local_x_vector[2]**2) #length of local x-vector
+    local_x_unit = local_x_vector/magX #Local unit vector defining local x-axis  
+    
+    #Local y-vector in global RF using matrix cross product
+    local_y_unit = np.cross(local_z_unit, local_x_unit) ##Local unit vector defining local y-axis  
+    
+    #combine reference frame into standard rotation matrix for the element vector x, y, z: column, 1, 2, 3
+    rotationMatrix = np.array([local_x_unit, local_y_unit, local_z_unit]).T
+    
+    R[0:3, 0:3] = rotationMatrix
+    
+    
+    return Matrix(R), length
+
+
+#Function to return translation component of transformation matrix
+def calculateTranslationMatrix(Pi, Pj):
+    offset = Pi + 0.50*(Pj - Pi) #translation to centre of eleemnt
+    transMatrix = Matrix.Translation(offset) #Construct a 4x4 transformation matrix that encodes this transformation
+    return transMatrix
+
+def generateElement(scale, length, num, forceMag = 1000.): #, color[n, 4])
+    #Add a mesh primitive
+    bpy.ops.mesh.primitive_cylinder_add(
+        vertices = 4,
+        radius = scale,
+        depth = length,
+        align = 'WORLD',
+        location = (0., 0., 0.),
+        scale = (1, 1, 1))
+    bpy.ops.object.shade_smooth()
+    cylinder = bpy.context.object #Get handle to object
+    cylinder.name = 'Element ' + str(num)+'_'+str(round(forceMag/1000.)) + 'kN' #Rename object in outliner
+    
+    return cylinder
+
+def generateNode(v, scale, num):
+    #Add a mesh primitive
+    bpy.ops.mesh.primitive_ico_sphere_add(
+        radius = 2.*scale,
+        subdivisions = 1,
+        enter_editmode=False,
+        align = 'WORLD',
+        location = (v[0], v[1], v[2]),
+        scale = (1, 1, 1))
+    bpy.ops.object.shade_smooth()
+    ico = bpy.context.object #Get handle to object
+    ico.name = 'Node ' + str(num) #Rename object in outliner
+    return ico
+
+
+def combineElements():
+    #https://blender.stackexchange.com/questions/13986/how-to-join-objects-with-python
+    obs=[]
+    collection = bpy.data.collections["COLORED-NETWORK"]
+    for ob in collection.objects:# bpy.context.scene.objects:
+        if ob.name.startswith('Element') or ob.name.startswith('Node'): obs.append(ob)
+    
+    print('\n',obs) 
+    #active_object = obs[0]
+     
+    #selected_objects = obs
+    
+    with bpy.context.temp_override(active_object=obs[0], selected_editable_objects=obs):
+        bpy.ops.object.join() 
+
+    return obs[0]
+    
+    
 def main(chunkSize, elementScale, redraw):
     lowerVertices, upperVertices, edges, faces = importData() #, color
     #print(edges)
     #print(vertices)
-    print(faces)
-    coll=bpy.data.collections.new("lowerBounds")
-    bpy.context.scene.collection.children.link(coll)
+    #print(faces)
 
-    name = 'network' 
     AllVertices=[]
     for vertice in lowerVertices:
         P=vertice   
@@ -43,38 +157,110 @@ def main(chunkSize, elementScale, redraw):
     print(allEdges)  
     
     allfaces=[]  
-    for face in faces:
+    for face in faces:        
         i=int(face[0])
         j=int(face[1])
         k=int(face[2])
         l=int(face[3])
         allfaces += [(i, j, k, l)] 
-    print(allfaces)         
-    mesh = bpy.data.meshes.new(name) 
-    mesh.from_pydata(AllVertices, allEdges, allfaces)
+    #print(allfaces)   
+    lowColl=bpy.data.collections.new("lowerBounds")
+    bpy.context.scene.collection.children.link(lowColl)
     
-    mesh2 = bpy.data.meshes.new('iforiofo') 
-    mesh2.from_pydata(AllUpperVertices, allEdges, allfaces)    
-    obj_network = bpy.data.objects.new(name, mesh)
-    coll.objects.link(obj_network)    
-    obj_network1 = bpy.data.objects.new(name, mesh2)
-    coll.objects.link(obj_network1)             
-    verts=[]
-    edge=[]    
+    
+    name = 'lowerBoundsNetwork'    
+    LOWnetmesh = bpy.data.meshes.new(name) 
+    LOWnetmesh.from_pydata(AllUpperVertices, allEdges, [])  
+    obj_LOWnetwork = bpy.data.objects.new(name, LOWnetmesh)
+    lowColl.objects.link(obj_LOWnetwork)      
+   
+   
+    name = 'loweBoundsSurface'      
+    LOWsurfmesh = bpy.data.meshes.new(name) 
+    #LOWmesh.from_pydata(AllVertices, allEdges, allfaces)
+    LOWsurfmesh.from_pydata(AllVertices, [], allfaces)
+    obj_LOWsurface = bpy.data.objects.new(name, LOWsurfmesh)
+    lowColl.objects.link(obj_LOWsurface)        
+    
+    
+    
+    upperColl=bpy.data.collections.new("upperBounds")
+    bpy.context.scene.collection.children.link(upperColl)
+    
+    name = 'upperBoundsNetwork' 
+    UPnetmesh = bpy.data.meshes.new(name) 
+    UPnetmesh.from_pydata(AllUpperVertices, allEdges, [])  
+    obj_UPnetwork = bpy.data.objects.new(name, UPnetmesh)
+    upperColl.objects.link(obj_UPnetwork)         
+    
+    name = 'upperBoundsSurface' 
+    UPsurfmesh = bpy.data.meshes.new(name)
+    UPsurfmesh.from_pydata(AllUpperVertices, [], allfaces)  
+    obj_UPsurfice = bpy.data.objects.new(name, UPsurfmesh)
+    upperColl.objects.link(obj_UPsurfice)
+    
+                 
+
+    #DegreeTutors    
+    coll=bpy.data.collections.new("COLORED-NETWORK") #Create a new collection
+    bpy.context.scene.collection.children.link(coll) #link collection to master scene collection #???
+    
+    #Generate elements
+    
+    #Create material
+    matName = "elementMat"
+    c = [0.95, 0.05, 0.05]
+    eleMat = makeMaterial(matName, (c[0], c[1], c[2], 1), 0.5, 0.3) #single material for all element
+    
+    cnt=0
     for n, e in enumerate(edges):
         i=int(e[0])
         j=int(e[1])
-        #Pi=vertices[i,:]
-        #Pj=vertices[j,:]       
+        Pi=lowerVertices[i,:]
+        Pj=lowerVertices[j,:]       
 
-      
+        #Calculate position and orientation
+        R, length = calculateRotationMatrix(Pi, Pj)
+        T = calculateTranslationMatrix(Pi, Pj)
+        transformationMatrix  = T @ R
         
+        #Generate eleemnt and apply tranformation
+        element = generateElement(elementScale, length, n) #, color[n, 4])
+        element.matrix_world = transformationMatrix
         
-      
-    #mesh.from_pydata(verts, edge, [])
-    # Create Object and link to scene
-
-    #bpy.context.scene.collection.objects.link(obj_network)
-    #print(Pi)
+        #Link object with 'COLORED-NETWORK' collection
+        coll.objects.link(element)   
+        if n==0: ob_to_unlink = element
+        
+        #Apply material to current element
+        setMaterial(element, eleMat)
+        cnt+=1
+        #print(cnt)        
+        if cnt == chunkSize and n<=len(edges)- chunkSize:
+            cnt=0            
+            group = combineElements()
+            group.name ='Group_' + group.name  
+            print('\n', f'Completed element: {n+1} of {len(edges)}')
+            if redraw:
+                bpy.ops.wm.redraw_timer(type = 'DRAW_WIN_SWAP', iterations = 1)#Update 3D viewport 
+            bpy.context.scene.collection.objects.unlink(group)
+   
+    #Generate nodes same pattern as above elements)
+    matName = "nodeMat"
+    nodemat= makeMaterial(matName, (0.2, 0.8, 0.8, 1), 0.8, 0.5) #single material for all nodes
+    cnt=0
+    for n, v in enumerate(lowerVertices):
+        node = generateNode(v, elementScale, n)        
+        coll.objects.link(node)   
+        setMaterial(node, nodemat)
+        cnt+=1
+        if cnt == chunkSize and n<=len(lowerVertices)- chunkSize:
+            cnt=0            
+            group = combineElements()
+            group.name ='Group_' + group.name
+            print('\n', f'Completed node: {n+1} of {len(lowerVertices)}')
+            if redraw:
+                bpy.ops.wm.redraw_timer(type = 'DRAW_WIN_SWAP', iterations = 1)#Update 3D viewport 
+            bpy.context.scene.collection.objects.unlink(group)
     
-main(10, 0.03, False)
+main(10, 0.01, False)
