@@ -116,12 +116,12 @@ def generateNode(v, scale, num):
     return ico
 
 
-def combineElements():
+def combineElements(prefix, collection):
     #https://blender.stackexchange.com/questions/13986/how-to-join-objects-with-python
     obs=[]
-    collection = bpy.data.collections["COLORED-NETWORK"]
+    #collection = bpy.data.collections["COLORED-NETWORK"]
     for ob in collection.objects:# bpy.context.scene.objects:
-        if ob.name.startswith('Element') or ob.name.startswith('Node'): obs.append(ob)
+        if ob.name.startswith(prefix): obs.append(ob)
     
     print('\n',obs) 
     #active_object = obs[0]
@@ -154,7 +154,7 @@ def main(chunkSize, elementScale, redraw):
         i=int(edge[0])
         j=int(edge[1])
         allEdges += [(i, j)] 
-    print(allEdges)  
+    #print(allEdges)  
     
     allfaces=[]  
     for face in faces:        
@@ -201,9 +201,18 @@ def main(chunkSize, elementScale, redraw):
     
                  
 
-    #DegreeTutors    
-    coll=bpy.data.collections.new("COLORED-NETWORK") #Create a new collection
+    #DegreeTutors
+    
+    NetworkCollectionName='COLORED-NETWORK'
+    Active_collection=bpy.context.view_layer.active_layer_collection.collection
+    coll=bpy.data.collections.new(NetworkCollectionName) #Create a new collection
     bpy.context.scene.collection.children.link(coll) #link collection to master scene collection #???
+    
+    collBranches=bpy.data.collections.new("Branches") 
+    bpy.data.collections[NetworkCollectionName].children.link(collBranches)
+
+    collNodes=bpy.data.collections.new("Nodes") 
+    bpy.data.collections[NetworkCollectionName].children.link(collNodes)
     
     #Generate elements
     
@@ -229,21 +238,22 @@ def main(chunkSize, elementScale, redraw):
         element.matrix_world = transformationMatrix
         
         #Link object with 'COLORED-NETWORK' collection
-        coll.objects.link(element)   
-        if n==0: ob_to_unlink = element
+        collBranches.objects.link(element) 
+        Active_collection.objects.unlink(element)  
+        #if n==0: ob_to_unlink = element
         
         #Apply material to current element
-        setMaterial(element, eleMat)
+        setMaterial(element, eleMat)        
         cnt+=1
         #print(cnt)        
-        if cnt == chunkSize and n<=len(edges)- chunkSize:
+        if cnt == chunkSize:# and n<=len(edges)- chunkSize:
             cnt=0            
-            group = combineElements()
+            group = combineElements('Element', collBranches)
             group.name ='Group_' + group.name  
             print('\n', f'Completed element: {n+1} of {len(edges)}')
             if redraw:
                 bpy.ops.wm.redraw_timer(type = 'DRAW_WIN_SWAP', iterations = 1)#Update 3D viewport 
-            bpy.context.scene.collection.objects.unlink(group)
+            #bpy.context.scene.collection.objects.unlink(group)
    
     #Generate nodes same pattern as above elements)
     matName = "nodeMat"
@@ -251,16 +261,17 @@ def main(chunkSize, elementScale, redraw):
     cnt=0
     for n, v in enumerate(lowerVertices):
         node = generateNode(v, elementScale, n)        
-        coll.objects.link(node)   
+        collNodes.objects.link(node)   
+        Active_collection.objects.unlink(node) 
         setMaterial(node, nodemat)
         cnt+=1
-        if cnt == chunkSize and n<=len(lowerVertices)- chunkSize:
+        if cnt == chunkSize:# and n<=len(lowerVertices)- chunkSize:
             cnt=0            
-            group = combineElements()
+            group = combineElements('Node', collNodes)
             group.name ='Group_' + group.name
             print('\n', f'Completed node: {n+1} of {len(lowerVertices)}')
             if redraw:
                 bpy.ops.wm.redraw_timer(type = 'DRAW_WIN_SWAP', iterations = 1)#Update 3D viewport 
-            bpy.context.scene.collection.objects.unlink(group)
+            #bpy.context.scene.collection.objects.unlink(group)
     
-main(10, 0.01, False)
+main(20, 0.005, False)
