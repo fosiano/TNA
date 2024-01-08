@@ -706,6 +706,21 @@ if convergenzad:
 else:
     print ("L'ottimizzazione di d non converge")
 #******************************************************************************
+import matplotlib
+import matplotlib.pyplot as plt
+import csv
+
+cmap = plt.cm.jet_r
+norm = matplotlib.colors.Normalize(vmin=tbmin, vmax=tbmax)
+
+color = np.empty((0, 5))
+for n, thrust in enumerate(tmin):
+    mbrColor = cmap(norm(thrust)) + (thrust,)
+    color = np.append(color, [mbrColor], axis=0)
+filename='Branches-Color.csv'
+with open(filename, 'w', newline='') as csvfile:
+    csvwriter=csv.writer(csvfile)
+    csvwriter.writerows(color)    
 
 
 '''

@@ -23,11 +23,10 @@ def setMaterial(ob, mat):
 def importData():
     lowerVertices = genfromtxt('E:\Archivio Lavori\Sviluppo\TNA\VerticesLowerBounds.csv', delimiter = ',')
     upperVertices = genfromtxt('E:\Archivio Lavori\Sviluppo\TNA\VerticesUpperBounds.csv', delimiter = ',')
-    edges = genfromtxt('E:\Archivio Lavori\Sviluppo\TNA\Edges.csv', delimiter = ',')
+    edges = genfromtxt('E:\Archivio Lavori\Sviluppo\TNA\Edge.csv', delimiter = ',')
     faces = genfromtxt('E:\Archivio Lavori\Sviluppo\TNA\Faces.csv', delimiter = ',')
-
-    #color = genfromtxt('Member-Color.csv', delimiter = ';')
-    return lowerVertices, upperVertices, edges, faces #, color
+    color = genfromtxt('E:\Archivio Lavori\Sviluppo\TNA\Branches-Color.csv', delimiter = ',')
+    return lowerVertices, upperVertices, edges, faces, color
 
 def calculateRotationMatrix(Pi, Pj):
     R = np.identity(4)
@@ -89,7 +88,7 @@ def calculateTranslationMatrix(Pi, Pj):
 def generateElement(scale, length, num, forceMag = 1000.): #, color[n, 4])
     #Add a mesh primitive
     bpy.ops.mesh.primitive_cylinder_add(
-        vertices = 4,
+        vertices = 16,
         radius = scale,
         depth = length,
         align = 'WORLD',
@@ -105,7 +104,7 @@ def generateNode(v, scale, num):
     #Add a mesh primitive
     bpy.ops.mesh.primitive_ico_sphere_add(
         radius = 2.*scale,
-        subdivisions = 1,
+        subdivisions = 2,
         enter_editmode=False,
         align = 'WORLD',
         location = (v[0], v[1], v[2]),
@@ -135,7 +134,7 @@ def combineElements(prefix, collection):
     
     
 def main(chunkSize, elementScale, redraw):
-    lowerVertices, upperVertices, edges, faces = importData() #, color
+    lowerVertices, upperVertices, edges, faces, color = importData() #
     #print(edges)
     #print(vertices)
     #print(faces)
@@ -164,26 +163,27 @@ def main(chunkSize, elementScale, redraw):
         l=int(face[3])
         allfaces += [(i, j, k, l)] 
     #print(allfaces)   
+   
     lowColl=bpy.data.collections.new("lowerBounds")
     bpy.context.scene.collection.children.link(lowColl)
     
+    #check=bpy.context.scene.collection.children["COLORED-NETWORK"].children.get('Branches')
     
     name = 'lowerBoundsNetwork'    
     LOWnetmesh = bpy.data.meshes.new(name) 
-    LOWnetmesh.from_pydata(AllUpperVertices, allEdges, [])  
+    LOWnetmesh.from_pydata(AllVertices, allEdges, [])  
     obj_LOWnetwork = bpy.data.objects.new(name, LOWnetmesh)
     lowColl.objects.link(obj_LOWnetwork)      
    
    
-    name = 'loweBoundsSurface'      
+    name = 'lowerBoundsSurface'      
     LOWsurfmesh = bpy.data.meshes.new(name) 
     #LOWmesh.from_pydata(AllVertices, allEdges, allfaces)
     LOWsurfmesh.from_pydata(AllVertices, [], allfaces)
     obj_LOWsurface = bpy.data.objects.new(name, LOWsurfmesh)
     lowColl.objects.link(obj_LOWsurface)        
     
-    
-    
+       
     upperColl=bpy.data.collections.new("upperBounds")
     bpy.context.scene.collection.children.link(upperColl)
     
@@ -206,7 +206,7 @@ def main(chunkSize, elementScale, redraw):
     NetworkCollectionName='COLORED-NETWORK'
     Active_collection=bpy.context.view_layer.active_layer_collection.collection
     coll=bpy.data.collections.new(NetworkCollectionName) #Create a new collection
-    bpy.context.scene.collection.children.link(coll) #link collection to master scene collection #???
+    bpy.context.scene.collection.children.link(coll) #link collection to master scene collection 
     
     collBranches=bpy.data.collections.new("Branches") 
     bpy.data.collections[NetworkCollectionName].children.link(collBranches)
@@ -218,8 +218,7 @@ def main(chunkSize, elementScale, redraw):
     
     #Create material
     matName = "elementMat"
-    c = [0.95, 0.05, 0.05]
-    eleMat = makeMaterial(matName, (c[0], c[1], c[2], 1), 0.5, 0.3) #single material for all element
+
     
     cnt=0
     for n, e in enumerate(edges):
@@ -243,6 +242,11 @@ def main(chunkSize, elementScale, redraw):
         #if n==0: ob_to_unlink = element
         
         #Apply material to current element
+        print(color)
+        c = color[n,:]
+        eleMat = makeMaterial(matName, (c[0], c[1], c[2], 1), 0.5, 0.3) #
+        
+        
         setMaterial(element, eleMat)        
         cnt+=1
         #print(cnt)        
@@ -257,7 +261,7 @@ def main(chunkSize, elementScale, redraw):
    
     #Generate nodes same pattern as above elements)
     matName = "nodeMat"
-    nodemat= makeMaterial(matName, (0.2, 0.8, 0.8, 1), 0.8, 0.5) #single material for all nodes
+    nodemat= makeMaterial(matName, (0.1, 0.95, 0.1, 1), 0.8, 0.5) #single material for all nodes
     cnt=0
     for n, v in enumerate(lowerVertices):
         node = generateNode(v, elementScale, n)        
@@ -274,4 +278,4 @@ def main(chunkSize, elementScale, redraw):
                 bpy.ops.wm.redraw_timer(type = 'DRAW_WIN_SWAP', iterations = 1)#Update 3D viewport 
             #bpy.context.scene.collection.objects.unlink(group)
     
-main(20, 0.005, False)
+main(20, 0.01, False)
