@@ -710,11 +710,15 @@ import matplotlib
 import matplotlib.pyplot as plt
 import csv
 
-cmap = plt.cm.jet_r
+cmap = plt.cm.jet
 norm = matplotlib.colors.Normalize(vmin=tbmin, vmax=tbmax)
+
+
 
 color = np.empty((0, 5))
 for n, thrust in enumerate(tmin):
+    print('norm(thrust) = ', norm(thrust))
+    print('cmap(norm(thrust))) = ', cmap(norm(thrust)))
     mbrColor = cmap(norm(thrust)) + (thrust,)
     color = np.append(color, [mbrColor], axis=0)
 filename='Branches-Color.csv'
@@ -722,7 +726,12 @@ with open(filename, 'w', newline='') as csvfile:
     csvwriter=csv.writer(csvfile)
     csvwriter.writerows(color)    
 
+cmapi = plt.cm.seismic
+normi = matplotlib.colors.Normalize(vmin=tbmin, vmax=tbmax)
 
+
+print('\ncmapi = ', cmapi)
+print('\nnormi = ', normi)
 '''
 ini=np.transpose(np.ones(2*Ni))
 def callbackF(t):

@@ -37,10 +37,10 @@ if not ExternalArches:
     
 spessoreVOLTA=0.30
 gammaVOLTA=16.00
-spessoreCAPPA=0.0
+spessoreCAPPA=0.08
 gammaCAPPA=25.00
-spessoreRINFIANCO=0.30
-gammaRINFIANCO=14.00
+spessoreRINFIANCO=0.00
+gammaRINFIANCO=0.00
 
 qperm=0.04*25.00+0.06*18.00+0.30+0.30
 qvar=3.00
@@ -54,12 +54,13 @@ infittimentoSpigoli=True
 #infittimentoSpigoli=False
 
 
-def GeneraZ(Ri, Re, xy):    
+def GeneraZ(Ri, Re, ReC, xy):    
     #xysqr=np.square(x)+np.square(y)
     xysqr=np.sum(np.square(xy), axis=1)
     zi=np.sqrt(Ri**2-xysqr)
-    ze=np.sqrt(Re**2-xysqr)   
-    return zi, ze
+    ze=np.sqrt(Re**2-xysqr) 
+    zeC=np.sqrt(ReC**2-xysqr)
+    return zi, ze, zeC
 
 
 xo=-B/2
@@ -108,7 +109,8 @@ if infittimentoSpigoli:
 NumeroNodiXYInf=len(XY)
 #GENERA QUOTE NODI INTERNI
 Re = R+spessoreVOLTA
-Zi, Ze = GeneraZ(R, Re, XY)    
+ReC = Re+spessoreCAPPA
+Zi, Ze, ZeC = GeneraZ(R, Re, ReC, XY)    
 
 #GENERA  NODI ARCHI ESTERNI
 
@@ -137,9 +139,10 @@ if ExternalArches:
     XYRightArch=XY[YBorderlistDx]+[+t, 0.00]
     ZiArches=Zi[XBorderlistDown]
     ZeArches=Ze[XBorderlistDown]
+    ZeCArches=ZeC[XBorderlistDown]
     Zi = np.hstack((Zi.T, ZiArches, ZiArches))
     Ze = np.hstack((Ze.T, ZeArches, ZeArches))
-
+    ZeC = np.hstack((ZeC.T, ZeCArches, ZeCArches))
 
 nNodiLato=len(XYLeftArch)
 
@@ -746,6 +749,7 @@ def Volumi(indxs):
     y=[0]*3
     z1=[0]*3
     z2=[0]*3
+    z3=[0]*3
     dzSumV=0.        
     dzSumC=0
     dzSumR=0.
@@ -754,16 +758,19 @@ def Volumi(indxs):
         y[i]=XY[indxs[i], 1]
         z1[i]=Zi[indxs[i]]
         z2[i]=Ze[indxs[i]]
-        #z3[i]=ZEstradossoCAPPA[indxs[i]]
-        dzSumV += z2[i]-z1[i]
-        #dzSumC += z3[i]-z2[i]
-        dzSumR += R+spessoreVOLTA+spessoreRINFIANCO-z2[i]
+        z3[i]=ZeC[indxs[i]]
+        dzSumV += z2[i]-z1[i]       
+        dzSumC += z3[i]-z2[i]
+        dzSumR += R+spessoreVOLTA+spessoreRINFIANCO-z3[i]
     S=0.50*abs(y[0]*(x[1]-x[2]) +y[1]*(x[2]-x[0]) +y[2]*(x[0]-x[1]))
     VlmV = S*dzSumV/3
+    VlmC = S*dzSumC/3
     VlmR = S*dzSumR/3
-    return S, VlmV, VlmR 
+    
+    return S, VlmV, VlmC, VlmR 
 
 fzV=np.zeros(NumeroNodiInterni)
+fzC=np.zeros(NumeroNodiInterni)
 fzR=np.zeros(NumeroNodiInterni)
 fzP=np.zeros(NumeroNodiInterni)
 i=0
@@ -771,30 +778,34 @@ conta=0
 for face in Faces:    
     indexes=list(sorted(set(face), key=face.index))
     if len(indexes)==3:
-        S, VlmV, VlmR = Volumi(indexes)
+        S, VlmV, VlmC, VlmR = Volumi(indexes)
         for j in range (0,3):
             fzV[face[j]]+=-VlmV/3 
+            fzC[face[j]]+=-VlmC/3 
             fzR[face[j]]+=-VlmR/3   
             fzP[face[j]]+=-S/3 
         conta += 1
         print("sono passato ", conta)
     else:
         indexes=face[:-1]
-        S, VlmV, VlmR = Volumi(indexes)
+        S, VlmV, VlmC, VlmR = Volumi(indexes)
         indexes = list(face)
         indexes.pop(1)
-        S1, VlmV1, VlmR1 = Volumi(indexes)
+        S1,  VlmV1, VlmC1, VlmR1 = Volumi(indexes)
         VlmV += VlmV1
+        VlmC += VlmC1
         VlmR += VlmR1
         S += S1
         for j in range (0,4):
             fzV[face[j]]+=-VlmV/4 
+            fzC[face[j]]+=-VlmC/4 
             fzR[face[j]]+=-VlmR/4    
             fzP[face[j]]+=-S/4 
 i+=1    
 
 
 fzV *= gammaVOLTA
+fzC *= gammaCAPPA
 fzR *= gammaRINFIANCO
 fzP *= (qperm+qvar)
 PesoTotaleV = 0.0
@@ -802,25 +813,22 @@ PesoTotaleR = 0.0
 PesoTotaleP = 0.0
 i=0
 PesoTotaleV=-np.sum(fzV)
+PesoTotaleC=-np.sum(fzC)
 PesoTotaleR=-np.sum(fzR)
 PesoTotaleP=-np.sum(fzP)
-PesoTotale=PesoTotaleV+PesoTotaleR+PesoTotaleP
+PesoTotale=PesoTotaleV+PesoTotaleC+PesoTotaleR+PesoTotaleP
 
 fx=np.zeros(NumeroNodiTotali)
 fy=np.zeros(NumeroNodiTotali)
-fz=fzV+fzR+fzP
+fz=fzV+fzC+fzR+fzP
 fz=np.hstack((fz, np.zeros(NumeroNodiEsterni)))
 
 
 print("\nPeso Proprio Volta =", PesoTotaleV)
+print("\nPeso Proprio Cappa =", PesoTotaleC)
 print("Peso rifianco      =", PesoTotaleR)
 print("Peso Altri Carichi permanenti e Variabili      =", PesoTotaleP)
 print("Peso Totale      =", PesoTotale)
-
-
-
-
-
 
 tipoNodo=np.ones(NumeroNodiInterni, dtype=int)
 tipoNodo=np.hstack((tipoNodo, np.zeros(NumeroNodiEsterni, dtype=int)))
